@@ -72,6 +72,10 @@
   "[internal] Timer function that emulates the `setTimeout' function in JS."
   (run-at-time (/ msec 1000.0) nil f) nil)
 
+(defun deferred:cancelTimeout (id)
+  "[internal] Timer cancellation function that emulates the `cancelTimeout' function in JS."
+  (cancel-timer id))
+
 ;; debug
 
 (eval-and-compile
@@ -310,13 +314,17 @@ is a short cut of following code:
 (defun deferred:wait (msec)
   "Return a deferred object scheduled at MSEC millisecond later."
   (lexical-let 
-      ((d (deferred:new)) (start-time (float-time)))
+      ((d (deferred:new)) (start-time (float-time)) timer)
     (deferred:message "WAIT : %s" msec)
-    (deferred:setTimeout msec 
-      (lambda () 
-        (deferred:post-message d 'ok 
-          (* 1000.0 (- (float-time) start-time)))
-        nil))
+    (setq timer (deferred:setTimeout msec 
+                  (lambda () 
+                    (deferred:post-message d 'ok 
+                      (* 1000.0 (- (float-time) start-time)))
+                    nil)))
+    (setf (deferred-canceller d) 
+          (lambda (x) 
+            (deferred:cancelTimeout timer)
+            (deferred:default-canceller x)))
     d))
 
 (defun deferred:waitc (d msec)
@@ -325,14 +333,19 @@ is a short cut of following code:
                 (nd (deferred:new)))
     (deferred:nextc d 
       (lambda (x) 
-        (lexical-let ((start-time (float-time)))
+        (lexical-let ((start-time (float-time)) timer)
           (deferred:message "WAITC : %s" msec)
-          (deferred:setTimeout 
-            msec
-            (lambda ()
-              (deferred:post-message nd 'ok 
-                (* 1000.0 (- (float-time) start-time)))
-              nil)))
+          (setq timer 
+                (deferred:setTimeout 
+                  msec
+                  (lambda ()
+                    (deferred:post-message nd 'ok 
+                      (* 1000.0 (- (float-time) start-time)))
+                    nil)))
+          (setf (deferred-canceller nd) 
+                (lambda (x) 
+                  (deferred:cancelTimeout timer)
+                  (deferred:default-canceller x))))
         nil))
     nd))
 
@@ -404,8 +417,13 @@ deferred objects or functions."
   (deferred:message "PARALLEL<LIST>" )
   (setq lst (deferred:parallel-go prev-deferred lst))
   (lexical-let ((nd (deferred:new)) 
-                (len (length lst))
+                (len (length lst)) (lst lst)
                 values fail-flag)
+    (setf (deferred-canceller nd)
+          (lambda (x)
+            (deferred:default-canceller nd)
+            (loop for d in lst
+                  do (deferred:cancel d))))
     (loop for d in lst
           do 
           (deferred:aand
@@ -451,8 +469,13 @@ deferred objects or functions."
   (deferred:message "PARALLEL<KEY . VALUE>" )
   (setq alst (deferred:parallel-go-alist prev-deferred alst))
   (lexical-let ((nd (deferred:new)) 
-                (len (length alst)) 
+                (len (length alst)) (alst alst)
                 values)
+    (setf (deferred-canceller nd)
+          (lambda (x)
+            (deferred:default-canceller nd)
+            (loop for d in alst
+                  do (deferred:cancel (cdr d)))))
     (loop for pair in alst
           do 
           (lexical-let
@@ -534,8 +557,13 @@ objects or functions."
   (deferred:message "EARLIER<LIST>" )
   (setq lst (deferred:parallel-go prev-deferred lst))
   (lexical-let ((nd (deferred:new))
-                (len (length lst))
+                (len (length lst)) (lst lst)
                 value results)
+    (setf (deferred-canceller nd)
+          (lambda (x)
+            (deferred:default-canceller nd)
+            (loop for d in lst
+                  do (deferred:cancel d))))
     (loop for d in lst
           do 
           (deferred:aand
@@ -567,8 +595,13 @@ objects or functions."
   (deferred:message "EARLIER<KEY . VALUE>" )
   (setq alst (deferred:parallel-go-alist prev-deferred alst))
   (lexical-let ((nd (deferred:new)) 
-                (len (length lst))
+                (len (length alst)) (alst alst)
                 value results)
+    (setf (deferred-canceller nd)
+          (lambda (x)
+            (deferred:default-canceller nd)
+            (loop for d in alst
+                  do (deferred:cancel (cdr d)))))
     (loop for pair in alst
           do 
           (lexical-let
@@ -601,18 +634,19 @@ objects or functions."
 
 (defun deferred:chain (args)
   "Build and return a deferred chain with the given functions and
-deferred objects. A list in the ARGS list is translated into a
-parallel task. A set of the symbol `:error' and a following
-function is translated into an errorback task."
+deferred objects. The deferred object is a chain of the given
+functions and deferred objects. A nested list in ARGS is
+translated into a parallel task. A set of the symbol `:error' and
+a following function is translated into an errorback task."
   (deferred:chainc (deferred:next 'identity) args))
 
 (defun deferred:chainc (d args)
   "Build and connect a deferred object to the given deferred
 object. The deferred object is a chain of the given functions and
-deferred objects. A list in the ARGS list is translated into a
+deferred objects. A nested list in ARGS is translated into a
 parallel task. A set of the symbol `:error' and a following
 function is translated into an errorback task."
-  (let ((d d))
+  (lexical-let ((first d) (d d))
     (cond
      ((null args) nil)
      (t
@@ -641,6 +675,10 @@ function is translated into an errorback task."
               (setq d (deferred:parallelc d i)))
              (t
               (error "A wrong object was given for chain : %s" i))))))
+    (setf (deferred-canceller d)
+          (lambda (x)
+            (deferred:default-canceller x)
+            (deferred:cancel first)))
     d))
  
 ;;; test
@@ -650,20 +688,6 @@ function is translated into an errorback task."
 ;; (defun deferred:setTimeout (msec f) (deferred:call f))
 
 ;; (deferred:message-mark)
-
-;; (lexical-let (ret count)
-;;   (deferred:nextc 
-;;   (deferred:aand
-;;     (deferred:loop 5 (lambda (i) 
-;;                        (push i count)
-;;                        (if (eql i 3) (deferred:new (lambda (x) (push x count))))))
-;;     (deferred:nextc it (lambda (x) (format "OK %s" count)))
-;;     (deferred:error it (lambda (e) (format "error!!! %s" e)))
-;;     )
-;;   (lambda (x) (setq ret x)))
-;;   (deferred:fire-queue!)
-;;   ret)
-
 
 (provide 'el-deferred)
 ;;; el-deferred.el ends here

@@ -75,13 +75,18 @@
   "overrided for test"
   (deferred:call f))
 
+(defun deferred:cancelTimeout (id)
+  "overrided for test"
+  (when (deferred-p id)
+    (deferred:cancel id)))
+
 
 
 (dont-compile
   (when (fboundp 'expectations)
 
-    (defun el-deferred:not-called-func ()
-      (error "Must not be called!!"))
+    (defun el-deferred:not-called-func (&optional m)
+      (error "Must not be called!! %s" m))
 
     (expectations
 
@@ -139,7 +144,9 @@
              ;; error recovery test 2
              (dtest
               (next (error "callback called"))
+              (nextc it (el-deferred:not-called-func "second errorback1"))
               (errorc it e)
+              (errorc it (el-deferred:not-called-func "second errorback2"))
               (nextc it (error "second errorback called"))
               (nextc it "skipped")
               (errorc it e)))
@@ -189,6 +196,13 @@
               (nextc it (if (< x 300) "waitc ok" x))
               (errorf it "Error on simple wait chain : %s")))
 
+     (expect nil
+             ;; wait cancel test
+             (dtest
+              (wait 1000)
+              (cancelc it)
+              (nextc it (el-deferred:not-called-func "wait cancel"))))
+
 
 
      (desc ">>> Utility Functions Tests")
@@ -224,7 +238,7 @@
      (expect nil
              ;; zero times loop test
              (dtest
-              (dloop 0 (lambda (i) (el-deferred:not-called-func)))))
+              (dloop 0 (lambda (i) (el-deferred:not-called-func "zero loop")))))
 
      (desc "> parallel")
      (expect nil
@@ -343,6 +357,14 @@
                (cons 'a (next (error "ERROR")))
                (cons 'b (next (error "ERROR2"))))
               (nextc it (format "%s" x))))
+
+     (expect nil
+             ;; parallel cancel test
+             (dtest
+              (parallel
+               (list (next (el-deferred:not-called-func "parallel 1"))
+                     (next (el-deferred:not-called-func "parallel 2"))))
+              (cancelc it)))
      
      (desc "> earlier")
      (expect nil
@@ -460,6 +482,14 @@
                (cons 'a (next (error "ERROR")))
                (cons 'b (next (error "ERROR2"))))
               (nextc it x)))
+
+     (expect nil
+             ;; cancel test
+             (dtest
+              (earlier
+               (list (next (el-deferred:not-called-func "earlier 1"))
+                     (next (el-deferred:not-called-func "earlier 2"))))
+              (cancelc it)))
      
      (desc "> chain")
 
@@ -506,6 +536,15 @@
                (list
                 (lambda (x) (dnew "nested"))
                 (lambda (x) (concat x " chain"))))))
+
+     (expect nil
+             ;; cancel test
+             (dtest
+              (chain
+               (list
+                (lambda (x) (el-deferred:not-called-func "chain 1"))
+                (lambda (x) (el-deferred:not-called-func "chain 2"))))
+              (cancelc it)))
 
      ) ;expectations
     ))
