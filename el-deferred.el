@@ -373,12 +373,21 @@ is a short cut of following code:
 
 (defun deferred:loop-iter (prev-deferred times func)
   "[internal] Iteration main."
-  (loop for i from 0 below times
-        with ld = prev-deferred
-        do (setq ld 
-                 (lexical-let ((i i) (func func))
-                   (deferred:nextc ld (lambda (x) (funcall func i)))))
-        finally return ld))
+  (lexical-let*
+      (items (rd 
+              (loop for i from 0 below times
+                    with ld = prev-deferred
+                    do 
+                    (push ld items)
+                    (setq ld 
+                          (lexical-let ((i i) (func func))
+                            (deferred:nextc ld (lambda (x) (funcall func i)))))
+                    finally return ld)))
+    (setf (deferred-canceller rd)
+          (lambda (x) (deferred:default-canceller x)
+            (loop for i in items
+                  do (deferred:cancel i))))
+    rd))
 
 (defun deferred:parallel (&rest args)
   "Return a deferred object that calls given deferred objects or

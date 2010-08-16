@@ -240,6 +240,12 @@
              (dtest
               (dloop 0 (lambda (i) (el-deferred:not-called-func "zero loop")))))
 
+     (expect nil
+             ;; loop cancel test
+             (dtest
+              (dloop 3 (lambda (i) (el-deferred:not-called-func "loop cancel")))
+              (cancelc it)))
+
      (desc "> parallel")
      (expect nil
              ;; nil test
