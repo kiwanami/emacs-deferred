@@ -389,6 +389,7 @@ is a short cut of following code:
                   do (deferred:cancel i))))
     rd))
 
+
 (defun deferred:parallel (&rest args)
   "Return a deferred object that calls given deferred objects or
 functions parallelly and wait for all callbacks. The following
@@ -406,6 +407,11 @@ callbacks. The following deferred task will be called with an
 array of the return values. ARGS can be a list or an alist of
 deferred objects or functions."
   (deferred:message "PARALLELC : %s" args)
+  (deferred:trans-multi-args d args 
+    'deferred:parallelc 'deferred:parallel-list 'deferred:parallel-main))
+
+(defun deferred:trans-multi-args (d args self-func list-func main-func)
+  "[internal] Check the argument values and dispatch to methods."
   (cond
    ((and (= 1 (length args)) (consp (car args)) (not (functionp (car args))))
     (let ((lst (car args)))
@@ -414,120 +420,98 @@ deferred objects or functions."
         d)
        ((deferred:aand lst (car it) (or (functionp it) (deferred-p it)))
         ;; a list of deferred objects
-        (deferred:parallel-list d lst))
+        (funcall list-func d lst))
        ((deferred:aand lst (consp it))
         ;; an alist of deferred objects
-        (deferred:parallel-alist d lst))
+        (funcall main-func d lst))
        (t (error "Wrong argument type. %s" args)))))
-   (t (deferred:parallelc d args))))
+   (t (funcall self-func d args))))
 
-(defun deferred:parallel-list (prev-deferred lst)
-  "[internal]"
+(defun deferred:parallel-list (d lst)
+  "[internal] Deferred list implementation for `deferred:parallel'. "
   (deferred:message "PARALLEL<LIST>" )
-  (setq lst (deferred:parallel-go prev-deferred lst))
-  (lexical-let ((nd (deferred:new)) 
-                (len (length lst)) (lst lst)
-                values fail-flag)
-    (setf (deferred-canceller nd)
-          (lambda (x)
-            (deferred:default-canceller nd)
-            (loop for d in lst
-                  do (deferred:cancel d))))
-    (loop for d in lst
-          do 
-          (deferred:aand
-            (deferred:nextc d
-              (lambda (x)
-                (push x values)
-                (deferred:message "PARALLEL VALUE [%s/%s] %s" 
-                  (length values) len x)
-                (when (= len (length values))
-                  (deferred:message "PARALLEL COLLECTED")
-                  (deferred:post-queue nd 'ok values))
-                nil))
-            (deferred:error it
-              (lambda (e)
-                (push e values)
-                (deferred:message "PARALLEL ERROR [%s/%s] %s" (length values) len e)
-                (when (= (length values) len)
-                  (deferred:message "PARALLEL COLLECTED")
-                  (deferred:post-queue nd 'ok values))
-                nil))))
-    nd))
+  (lexical-let*
+      ((pd (deferred:parallel-main d (deferred:parallel-array-to-alist lst)))
+       (rd (deferred:nextc pd 'deferred:parallel-alist-to-array)))
+    (setf (deferred-canceller rd)
+          (lambda (x) (deferred:default-canceller x)
+            (deferred:cancel pd)))
+    rd))
 
-(defun deferred:parallel-go (prev-deferred lst)
-  "[internal] TODO:"
-  (setq lst
-        (loop for d in lst 
-              collect
-              (progn
-                (unless (deferred-p d)
-                  (setq d (deferred:new d)))
-                (deferred:remove-from-queue d)
-                d)))
-  (lexical-let ((lst lst))
-    (deferred:nextc prev-deferred
+(defun deferred:parallel-array-to-alist (lst)
+  "[internal] Translation array to alist."
+  (loop for d in lst
+        for i from 0 below (length lst)
+        collect (cons i d)))
+
+(defun deferred:parallel-alist-to-array (alst)
+  "[internal] Translation alist to array."
+  (loop for pair in 
+        (sort alst (lambda (x y)
+                     (< (car x) (car y))))
+        collect (cdr pair)))
+
+(defun deferred:parallel-func-to-deferred (alst)
+  "[internal] Normalization for parallel and earlier arguments."
+  (loop for pair in alst 
+        for d = (cdr pair)
+        collect
+        (progn 
+          (unless (deferred-p d)
+            (setf (cdr pair) (deferred:new d)))
+          (deferred:remove-from-queue d)
+          pair)))
+
+(defun deferred:parallel-connect-children (d alst)
+  "[internal] Connect the given deferred and children deferred in
+the given alist."
+  (lexical-let ((alst alst))
+    (deferred:nextc d
       (lambda (x)
-        (loop for d in lst
-              do (deferred:post-queue d 'ok x))
-        nil)))
-  lst)
-
-(defun deferred:parallel-alist (prev-deferred alst)
-  "[internal]"
-  (deferred:message "PARALLEL<KEY . VALUE>" )
-  (setq alst (deferred:parallel-go-alist prev-deferred alst))
-  (lexical-let ((nd (deferred:new)) 
-                (len (length alst)) (alst alst)
-                values)
-    (setf (deferred-canceller nd)
+        (loop for pair in alst
+              for cd = (cdr pair)
+              do (deferred:post-queue cd 'ok x))
+        nil))
+    (setf (deferred-canceller d)
           (lambda (x)
-            (deferred:default-canceller nd)
-            (loop for d in alst
-                  do (deferred:cancel (cdr d)))))
-    (loop for pair in alst
+            (deferred:default-canceller x)
+            (loop for pair in alst
+                  do (deferred:cancel (cdr pair)))))
+    alst))
+
+(defun deferred:parallel-main (d alst)
+  "[internal] Deferred alist implementation for `deferred:parallel'. "
+  (deferred:message "PARALLEL<KEY . VALUE>" )
+  (lexical-let ((nd (deferred:new))
+                (len (length alst))
+                values)
+    (loop for pair in 
+          (deferred:parallel-connect-children d 
+            (deferred:parallel-func-to-deferred alst))
+          with cd ; current child deferred
           do 
-          (lexical-let
-              ((name (car pair))
-               (d (cdr pair)))
-            (deferred:aand
-              (deferred:nextc d 
-                (lambda (x)
-                  (push (cons name x) values)
-                  (deferred:message "PARALLEL VALUE [%s/%s] %s" 
-                    (length values) len (cons name x))
-                  (when (= len (length values))
-                    (deferred:message "PARALLEL COLLECTED")
-                    (deferred:post-queue nd 'ok values))
-                  nil))
-            (deferred:error it
+          (lexical-let ((name (car pair)))
+            (setq cd
+                  (deferred:nextc (cdr pair)
+                    (lambda (x)
+                      (push (cons name x) values)
+                      (deferred:message "PARALLEL VALUE [%s/%s] %s" 
+                        (length values) len (cons name x))
+                      (when (= len (length values))
+                        (deferred:message "PARALLEL COLLECTED")
+                        (deferred:post-queue nd 'ok (nreverse values)))
+                      nil)))
+            (deferred:error cd
               (lambda (e)
                 (push (cons name e) values)
                 (deferred:message "PARALLEL ERROR [%s/%s] %s" 
                   (length values) len (cons name e))
                 (when (= (length values) len)
                   (deferred:message "PARALLEL COLLECTED")
-                  (deferred:post-queue nd 'ok values))
-                nil)))))
+                  (deferred:post-queue nd 'ok (nreverse values)))
+                nil))))
     nd))
 
-(defun deferred:parallel-go-alist (prev-deferred alst)
-  "[internal]"
-  (setq alst
-        (loop for pair in alst 
-              collect
-              (progn 
-                (unless (deferred-p (cdr pair))
-                  (setf (cdr pair) (deferred:new (cdr pair))))
-                (deferred:remove-from-queue (cdr pair))
-                pair)))
-  (lexical-let ((alst alst))
-    (deferred:nextc prev-deferred
-      (lambda (x)
-        (loop for pair in alst
-              do (deferred:post-queue (cdr pair) 'ok x))
-        nil)))
-  alst)
 
 (defun deferred:earlier (&rest args)
   "Return a deferred object that calls given deferred objects or
@@ -546,99 +530,55 @@ callback. The following deferred task will be called with the
 first return value. ARGS can be a list or an alist of deferred
 objects or functions."
   (deferred:message "EARLIERC : %s" args)
-  (cond
-   ((and (= 1 (length args)) (consp (car args)) (not (functionp (car args))))
-    (let ((lst (car args)))
-      (cond
-       ((or (null lst) (null (car lst)))
-        d)
-       ((deferred:aand lst (car it) (or (functionp it) (deferred-p it)))
-        ;; a list of deferred objects
-        (deferred:earlier-list d lst))
-       ((deferred:aand lst (consp it))
-        ;; an alist of deferred objects
-        (deferred:earlier-alist d lst))
-       (t (error "Wrong argument type. %s" args)))))
-   (t (deferred:earlierc d args))))
+  (deferred:trans-multi-args d args 
+    'deferred:earlierc 'deferred:earlier-list 'deferred:earlier-main))
 
 (defun deferred:earlier-list (prev-deferred lst)
-  "[internal]"
+  "[internal] Deferred list implementation for `deferred:earlier'. "
   (deferred:message "EARLIER<LIST>" )
-  (setq lst (deferred:parallel-go prev-deferred lst))
-  (lexical-let ((nd (deferred:new))
-                (len (length lst)) (lst lst)
+  (lexical-let*
+      ((pd (deferred:earlier-main d (deferred:parallel-array-to-alist lst)))
+       (rd (deferred:nextc pd (lambda (x) (cdr x)))))
+    (setf (deferred-canceller rd)
+          (lambda (x) (deferred:default-canceller x)
+            (deferred:cancel pd)))
+    rd))
+
+(defun deferred:earlier-main (d alst)
+  "[internal] Deferred alist implementation for `deferred:earlier'. "
+  (deferred:message "EARLIER<KEY . VALUE>" )
+  (lexical-let ((nd (deferred:new)) 
+                (len (length alst))
                 value results)
-    (setf (deferred-canceller nd)
-          (lambda (x)
-            (deferred:default-canceller nd)
-            (loop for d in lst
-                  do (deferred:cancel d))))
-    (loop for d in lst
+    (loop for pair in 
+          (deferred:parallel-connect-children d 
+            (deferred:parallel-func-to-deferred alst))
+          with cd ; current child deferred
           do 
-          (deferred:aand
-            (deferred:nextc d
-              (lambda (x)
-                (push x results)
-                (cond
-                 ((null value)
-                  (setq value x)
-                  (deferred:message "EARLIER VALUE %s" value)
-                  (deferred:post-queue nd 'ok value))
-                 (t
-                  (deferred:message "EARLIER MISS [%s/%s] %s" (length results) len x)
-                  (when (eql (length results) len)
-                    (deferred:message "EARLIER COLLECTED"))))
-                nil))
-            (deferred:error it
+          (lexical-let ((name (car pair)))
+            (setq cd
+                  (deferred:nextc (cdr pair)
+                    (lambda (x)
+                      (push (cons name x) results)
+                      (cond
+                       ((null value)
+                        (setq value (cons name x))
+                        (deferred:message "EARLIER VALUE %s" (cons name value))
+                        (deferred:post-queue nd 'ok value))
+                       (t
+                        (deferred:message "EARLIER MISS [%s/%s] %s" (length results) len (cons name value))
+                        (when (eql (length results) len)
+                          (deferred:message "EARLIER COLLECTED"))))
+                      nil)))
+            (deferred:error cd
               (lambda (e)
-                (push e results)
-                (deferred:message "EARLIER ERROR [%s/%s] %s" (length results) len e)
+                (push (cons name e) results)
+                (deferred:message "EARLIER ERROR [%s/%s] %s" (length results) len (cons name e))
                 (when (and (eql (length results) len) (null value))
                   (deferred:message "EARLIER FAILED")
                   (deferred:post-queue nd 'ok nil))
                 nil))))
     nd))
-
-(defun deferred:earlier-alist (prev-deferred alst)
-  "[internal]"
-  (deferred:message "EARLIER<KEY . VALUE>" )
-  (setq alst (deferred:parallel-go-alist prev-deferred alst))
-  (lexical-let ((nd (deferred:new)) 
-                (len (length alst)) (alst alst)
-                value results)
-    (setf (deferred-canceller nd)
-          (lambda (x)
-            (deferred:default-canceller nd)
-            (loop for d in alst
-                  do (deferred:cancel (cdr d)))))
-    (loop for pair in alst
-          do 
-          (lexical-let
-              ((name (car pair))
-               (d (cdr pair)))
-            (deferred:aand
-              (deferred:nextc d 
-                (lambda (x)
-                  (push (cons name x) results)
-                  (cond
-                   ((null value)
-                    (setq value (cons name x))
-                    (deferred:message "EARLIER VALUE %s" (cons name value))
-                    (deferred:post-queue nd 'ok value))
-                   (t
-                    (deferred:message "EARLIER MISS [%s/%s] %s" (length results) len (cons name value))
-                    (when (eql (length results) len)
-                      (deferred:message "EARLIER COLLECTED"))))
-                  nil))
-              (deferred:error it
-                (lambda (e)
-                  (push (cons name e) results)
-                  (deferred:message "EARLIER ERROR [%s/%s] %s" (length results) len (cons name e))
-                  (when (and (eql (length results) len) (null value))
-                    (deferred:message "EARLIER FAILED")
-                    (deferred:post-queue nd 'ok nil))
-                  nil)))))
-          nd))
 
 
 (defun deferred:chain (args)
@@ -697,6 +637,10 @@ function is translated into an errorback task."
 ;; (defun deferred:setTimeout (msec f) (deferred:call f))
 
 ;; (deferred:message-mark)
+
+;; (deferred:nextc 
+;;   (deferred:parallel  (list (lambda (x) 1) (lambda (x) 2)))
+;;   (lambda (x) (message ">> %s" x)))
 
 (provide 'el-deferred)
 ;;; el-deferred.el ends here

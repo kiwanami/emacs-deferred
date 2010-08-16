@@ -290,16 +290,14 @@
              ;; simple parallel test: just return value
              (dtest
               (parallel 
-               (next 0) (next 1))
-              (nextc it (reverse x))))
+               (next 0) (next 1))))
 
      (expect '(11 12)
              ;; simple parallel test: argument
              (dtest
               (next 10)
               (parallelc it 
-                         (next (+ x 1)) (next (+ x 2)))
-              (nextc it (reverse x))))
+                         (next (+ x 1)) (next (+ x 2)))))
 
      (expect '(13 14)
              ;; simple parallel test: list
@@ -307,8 +305,7 @@
               (next 10)
               (parallelc it 
                          (list (next (+ x 3))
-                               (next (+ x 4))))
-              (nextc it (reverse x))))
+                               (next (+ x 4))))))
 
      (expect '((a . 20) (b . 30))
              ;; simple parallel test: alist
@@ -316,15 +313,13 @@
               (next 10)
               (parallelc it 
                          (list (cons 'a (next (+ x 10)))
-                               (cons 'b (next (+ x 20)))))
-              (nextc it (reverse x))))
+                               (cons 'b (next (+ x 20)))))))
 
      (expect '(0 1)
              ;; simple parallel test: function list
              (dtest
               (parallel 
-               (lambda (x) 0) (lambda (x) 1))
-              (nextc it (reverse x))))
+               (lambda (x) 0) (lambda (x) 1))))
 
      (expect '(0 1)
              ;; nested deferred and order change test
@@ -333,21 +328,21 @@
                (lambda (x) (dnew 0))
                (next 1))))
 
-     (expect "(ERROR2 ERROR OK)"
+     (expect "(ERROR OK ERROR2)"
              ;; error handling
              (dtest
               (parallel
                (next (error "ERROR")) (next "OK") (next (error "ERROR2")))
               (nextc it (format "%s" x))))
 
-     (expect "(ERROR2 ERROR)"
+     (expect "(ERROR ERROR2)"
              ;; failed test
              (dtest
               (parallel
                (next (error "ERROR")) (next (error "ERROR2")))
               (nextc it (format "%s" x))))
 
-     (expect "((c . ERROR2) (a . ERROR) (b . OK))"
+     (expect "((b . OK) (a . ERROR) (c . ERROR2))"
              ;; error handling
              (dtest
               (parallel
@@ -356,7 +351,7 @@
                (cons 'c (next (error "ERROR2"))))
               (nextc it (format "%s" x))))
 
-     (expect "((b . ERROR2) (a . ERROR))"
+     (expect "((a . ERROR) (b . ERROR2))"
              ;; failed test
              (dtest
               (parallel
@@ -512,7 +507,7 @@
                 (lambda (x) "simple")
                 (lambda (x) (concat x " chain"))))))
 
-     (expect "1211"
+     (expect "1112"
              ;; parallel chain test
              (dtest
               (chain
