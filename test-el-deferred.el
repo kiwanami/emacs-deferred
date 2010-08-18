@@ -71,6 +71,18 @@
        (fire)
        last-value)))
 
+(defmacro wtest (time &rest form)
+  `(progn 
+     (clear)
+     (lexical-let (last-value)
+       (nextc
+        (aand
+         ,@form)
+        (setq last-value x))
+       (sit-for ,time)
+       (fire)
+       last-value)))
+
 (defun deferred:setTimeout (msec f)
   "overrided for test"
   (deferred:call f))
@@ -546,6 +558,21 @@
                 (lambda (x) (el-deferred:not-called-func "chain 1"))
                 (lambda (x) (el-deferred:not-called-func "chain 2"))))
               (cancelc it)))
+
+     (desc ">>>Application")
+
+     (expect 
+      (with-temp-buffer 
+        (call-process "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process "pwd")))
+      
+     (expect "Searching for program: no such file or directory, pwd---"
+             (dtest
+              (deferred:process "pwd---")
+              (nextc it (el-deferred:not-called-func))
+              (errorc it e)))
 
      ) ;expectations
     ))
