@@ -7,6 +7,14 @@
   `(let ((it ,test))
      (if it ,(if rest (macroexpand-all `(aand ,@rest)) 'it))))
 
+(defmacro $ (&rest elements)
+  `(let (it)
+     ,@(loop for i in elements
+             with it = nil
+             collect
+             `(setq it ,i))
+     it))
+
 (defmacro dnew(&rest aforms)
   (if aforms
       `(deferred:new (lambda (x) ,@aforms))
@@ -65,7 +73,7 @@
      (clear)
      (lexical-let (last-value)
        (nextc
-        (aand
+        ($
          ,@form)
         (setq last-value x))
        (fire)
@@ -76,7 +84,7 @@
      (clear)
      (lexical-let (last-value)
        (nextc
-        (aand
+        ($
          ,@form)
         (setq last-value x))
        (sit-for ,time)
@@ -133,8 +141,8 @@
              ;; basic deferred chain test
              (clear)
              (lexical-let (vs)
-               (aand (next (push 1 vs))
-                     (nextc it (push 2 vs)))
+               ($ (next (push 1 vs))
+                  (nextc it (push 2 vs)))
                (push 0 vs)
                (fire)
                vs))
