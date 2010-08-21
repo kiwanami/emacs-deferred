@@ -1,5 +1,5 @@
 (require 'el-expectations)
-(require 'el-deferred)
+(require 'deferred)
 (require 'cl)
 (require 'pp)
 
@@ -105,7 +105,7 @@
 (dont-compile
   (when (fboundp 'expectations)
 
-    (defun el-deferred:not-called-func (&optional m)
+    (defun deferred:not-called-func (&optional m)
       (error "Must not be called!! %s" m))
 
     (expectations
@@ -115,9 +115,9 @@
              ;; function test
              (deferred:new))
 
-     (expect (not-called el-deferred:not-called-func)
+     (expect (not-called deferred:not-called-func)
              ;; basic cancel test
-             (let ((d (deferred:next 'el-deferred:not-called-func)))
+             (let ((d (deferred:next 'deferred:not-called-func)))
                (cancelc d)
                (fire)))
 
@@ -164,9 +164,9 @@
              ;; error recovery test 2
              (dtest
               (next (error "callback called"))
-              (nextc it (el-deferred:not-called-func "second errorback1"))
+              (nextc it (deferred:not-called-func "second errorback1"))
               (errorc it e)
-              (errorc it (el-deferred:not-called-func "second errorback2"))
+              (errorc it (deferred:not-called-func "second errorback2"))
               (nextc it (error "second errorback called"))
               (nextc it "skipped")
               (errorc it e)))
@@ -221,7 +221,7 @@
              (dtest
               (wait 1000)
               (cancelc it)
-              (nextc it (el-deferred:not-called-func "wait cancel"))))
+              (nextc it (deferred:not-called-func "wait cancel"))))
 
 
 
@@ -258,12 +258,12 @@
      (expect nil
              ;; zero times loop test
              (dtest
-              (dloop 0 (lambda (i) (el-deferred:not-called-func "zero loop")))))
+              (dloop 0 (lambda (i) (deferred:not-called-func "zero loop")))))
 
      (expect nil
              ;; loop cancel test
              (dtest
-              (dloop 3 (lambda (i) (el-deferred:not-called-func "loop cancel")))
+              (dloop 3 (lambda (i) (deferred:not-called-func "loop cancel")))
               (cancelc it)))
 
      (desc "> parallel")
@@ -383,8 +383,8 @@
              ;; parallel cancel test
              (dtest
               (parallel
-               (list (next (el-deferred:not-called-func "parallel 1"))
-                     (next (el-deferred:not-called-func "parallel 2"))))
+               (list (next (deferred:not-called-func "parallel 1"))
+                     (next (deferred:not-called-func "parallel 2"))))
               (cancelc it)))
      
      (desc "> earlier")
@@ -508,8 +508,8 @@
              ;; cancel test
              (dtest
               (earlier
-               (list (next (el-deferred:not-called-func "earlier 1"))
-                     (next (el-deferred:not-called-func "earlier 2"))))
+               (list (next (deferred:not-called-func "earlier 1"))
+                     (next (deferred:not-called-func "earlier 2"))))
               (cancelc it)))
      
      (desc "> chain")
@@ -563,8 +563,8 @@
              (dtest
               (chain
                (list
-                (lambda (x) (el-deferred:not-called-func "chain 1"))
-                (lambda (x) (el-deferred:not-called-func "chain 2"))))
+                (lambda (x) (deferred:not-called-func "chain 1"))
+                (lambda (x) (deferred:not-called-func "chain 2"))))
               (cancelc it)))
 
      (desc ">>>Application")
@@ -579,7 +579,7 @@
      (expect "Searching for program: no such file or directory, pwd---"
              (dtest
               (deferred:process "pwd---")
-              (nextc it (el-deferred:not-called-func))
+              (nextc it (deferred:not-called-func))
               (errorc it e)))
 
      ) ;expectations

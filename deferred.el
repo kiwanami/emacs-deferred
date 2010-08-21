@@ -1,4 +1,4 @@
-;;; el-deferred.el --- Simple asynchronous functions for emacs lisp
+;;; deferred.el --- Simple asynchronous functions for emacs lisp
 
 ;; Copyright (C) 2010  SAKURAI Masashi
 
@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 
-;; el-deferred is a simple library for asyncronous tasks.  The API is
+;; deferred is a simple library for asyncronous tasks.  The API is
 ;; almost the same as JSDeferred written by cho45. (See the web site
 ;; http://coderepos.org/share/wiki/JSDeferred)
 
@@ -115,7 +115,7 @@
   "[internal] Save debug log."
   (interactive)
   (unless filename
-    (setq filename "el-deferred-debug.txt"))
+    (setq filename "deferred-debug.txt"))
   (with-current-buffer (get-buffer-create "*deferred:debug*")
     (write-file filename nil)))
 
@@ -168,7 +168,7 @@ Mainly this function is called by timer asynchronously."
           (setq value (deferred:post-message d which arg))
         (error 
          (deferred:message "ERROR : %s" err)
-         (message "el-deferred error : %s" err)))
+         (message "deferred error : %s" err)))
       (setq deferred:queue (nbutlast deferred:queue))
       value)))
 
@@ -734,5 +734,5 @@ process."
 ;; (setq deferred:debug t)
 ;; (setq deferred:queue nil)
 
-(provide 'el-deferred)
-;;; el-deferred.el ends here
+(provide 'deferred)
+;;; deferred.el ends here
