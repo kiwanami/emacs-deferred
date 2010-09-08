@@ -1,3 +1,22 @@
+;;; test code for deferred.el
+
+;; Copyright (C) 2010  SAKURAI Masashi
+;; Author: SAKURAI Masashi <m.sakurai@kiwanami.net>
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 (require 'el-expectations)
 (require 'deferred)
 (require 'cl)
@@ -38,32 +57,20 @@
 (defmacro wait(msec)
   `(deferred:wait ,msec))
 
-(defmacro waitc(d msec)
-  `(deferred:waitc ,d ,msec))
-
 (defmacro dloop(&rest body)
   `(deferred:loop ,@body))
 
 (defmacro parallel(&rest args)
   `(deferred:parallel ,@args))
 
-(defmacro parallelc(d &rest args)
-  `(deferred:parallelc ,d ,@args))
-
 (defmacro earlier(&rest args)
   `(deferred:earlier ,@args))
-
-(defmacro earlierc(d &rest args)
-  `(deferred:earlierc ,d ,@args))
 
 (defmacro chain(&rest args)
   `(deferred:chain ,@args))
 
-(defmacro chainc(d &rest args)
-  `(deferred:chainc ,d ,@args))
-
-(defmacro fire ()
-  `(deferred:fire-queue!))
+(defmacro flush ()
+  `(deferred:flush-queue!))
 
 (defmacro clear ()
   `(setq deferred:queue nil))
@@ -76,7 +83,7 @@
         ($
          ,@form)
         (setq last-value x))
-       (fire)
+       (flush)
        last-value)))
 
 (defmacro wtest (time &rest form)
@@ -88,10 +95,10 @@
          ,@form)
         (setq last-value x))
        (sit-for ,time)
-       (fire)
+       (flush)
        last-value)))
 
-(defun deferred:setTimeout (msec f)
+(defun deferred:setTimeout (f msec)
   "overrided for test"
   (deferred:call f))
 
@@ -119,21 +126,69 @@
              ;; basic cancel test
              (let ((d (deferred:next 'deferred:not-called-func)))
                (cancelc d)
-               (fire)))
+               (flush)))
 
      (expect (type vector)
              ;; basic post function test
              (clear)
              (lexical-let ((d (dnew)))
                (nextc d x)
-               (deferred:post-message d 'ok "ok!")))
+               (deferred:exec-task d 'ok "ok!")))
 
      (expect (type vector)
              ;; basic error post function test
              (clear)
              (lexical-let ((d (dnew)))
                (deferred:error d (lambda (e) e))
-               (deferred:post-message d 'ng "error")))
+               (deferred:exec-task d 'ng "error")))
+
+     (desc "> result propagation")
+     (expect 'ok
+             ;; value saving test
+             (let ((d (deferred:succeed 1)))
+               (deferred:status d)))
+
+     (expect 1
+             ;; value saving test
+             (let ((d (deferred:succeed 1)))
+               (deferred-value d)))
+
+     (expect nil
+             ;; value clearing test
+             (let ((d (deferred:succeed 1)))
+               (deferred:set-next d (dnew))
+               (deferred:status d)))
+
+     (expect 1
+             ;; value propagating test
+             (let ((d (deferred:succeed 1))
+                   (nd (dnew)))
+               (deferred:set-next d nd)
+               (deferred-value nd)))
+
+     (desc "> error propagation")
+     (expect 'ok
+             ;; value saving test
+             (let ((d (deferred:succeed 1)))
+               (deferred:status d)))
+
+     (expect 1
+             ;; value saving test
+             (let ((d (deferred:succeed 1)))
+               (deferred-value d)))
+
+     (expect nil
+             ;; value clearing test
+             (let ((d (deferred:succeed 1)))
+               (deferred:set-next d (dnew))
+               (deferred:status d)))
+
+     (expect 1
+             ;; value propagating test
+             (let ((d (deferred:succeed 1))
+                   (nd (dnew)))
+               (deferred:set-next d nd)
+               (deferred-value nd)))
 
      (desc ">>> Main Test")
 
@@ -144,7 +199,7 @@
                ($ (next (push 1 vs))
                   (nextc it (push 2 vs)))
                (push 0 vs)
-               (fire)
+               (flush)
                vs))
 
      (desc ">>> Test callback, errorback chain")
@@ -177,6 +232,19 @@
               (next
                (next "Child deferred chain"))
               (errorf it "Error on simple chain : %s")))
+
+     (desc "> async connect")
+     
+     (expect "saved result!"
+             ;; asynchronously connect deferred and propagate a value
+             (let (d ret)
+               (clear)
+               (setq d (next "saved "))
+               (deferred:callback d)
+               (flush)
+               (setq d (nextc d (concat x "result")))
+               (nextc d (setq ret (concat x "!")))
+               ret))
 
      (desc "> global onerror")
 
@@ -212,7 +280,7 @@
              (dtest
               (wait 1)
               (nextc it "wait")
-              (waitc it 1)
+              (nextc it (wait 1))
               (nextc it (if (< x 300) "waitc ok" x))
               (errorf it "Error on simple wait chain : %s")))
 
@@ -249,11 +317,19 @@
                (dtest
                 (dloop 5 (lambda (i) 
                            (push i count)
-                           (if (eql i 3) (dnew (push x count)))))
+                           (if (eql i 3) (next (push x count)))))
                 (nextc it (format "nested loop ok %s" count))
                 (errorf it "Error on simple loop calling : %s"))
                )
              )
+
+     (expect '(6 4 2)
+             ;; do-loop test
+             (lexical-let (count)
+               (dtest
+                (dloop '(1 2 3)
+                       (lambda (x) (push (* 2 x) count)))
+                (errorf it "Error on do-loop calling : %s"))))
 
      (expect nil
              ;; zero times loop test
@@ -266,45 +342,66 @@
               (dloop 3 (lambda (i) (deferred:not-called-func "loop cancel")))
               (cancelc it)))
 
+     (expect "loop error!"
+             ;; loop error recover test
+             (dtest
+              (deferred:loop 5
+                (lambda (i) (if (= 2 i) (error "loop error"))))
+              (nextc it (deferred:not-called-func))
+              (errorc it (format "%s!" e))
+              (nextc it x)))
+
+     (expect "loop error catch ok"
+             ;; try catch finally test
+             (lexical-let ((body (lambda ()
+                                   (deferred:loop 5
+                                     (lambda (i) (if (= 2 i) (error "loop error")))))))
+               (dtest
+                (next  "try ") ; try
+                (nextc it (funcall body)) ; body
+                (errorc it (format "%s catch " e)) ; catch 
+                (nextc it (concat x "ok"))))) ; finally
+
+     (expect "4 ok"
+             ;; try catch finally test
+             (lexical-let ((body (lambda ()
+                                   (deferred:loop 5
+                                     (lambda (i) i)))))
+               (dtest
+                (next  "try ") ; try
+                (nextc it (funcall body)) ; body
+                (errorc it (format "%s catch " e)) ; catch 
+                (nextc it (format "%s ok" x))))) ; finally
+
      (desc "> parallel")
      (expect nil
              ;; nil test
              (dtest
               (parallel '())))
 
-     (expect 100
-             ;; nil test2
-             (dtest
-              (next 100)
-              (parallelc it '())))
-
      (expect '(1)
              ;; single job test: argument
              (dtest
               (parallel 
-               (next 1))
-              (nextc it (reverse x))))
+               (next 1))))
 
      (expect '(1)
              ;; single job test: function
              (dtest
               (parallel 
-               (lambda (x) 1))
-              (nextc it (reverse x))))
+               (lambda () 1))))
 
      (expect '(1)
              ;; single job test: list
              (dtest
               (parallel 
-               (list (next 1)))
-              (nextc it (reverse x))))
+               (list (next 1)))))
 
      (expect '((a . 1))
              ;; single job test: alist
              (dtest
               (parallel 
-               (list (cons 'a (next 1))))
-              (nextc it (reverse x))))
+               (list (cons 'a (next 1))))))
 
      (expect '(0 1)
              ;; simple parallel test: just return value
@@ -312,40 +409,31 @@
               (parallel 
                (next 0) (next 1))))
 
-     (expect '(11 12)
-             ;; simple parallel test: argument
-             (dtest
-              (next 10)
-              (parallelc it 
-                         (next (+ x 1)) (next (+ x 2)))))
-
      (expect '(13 14)
              ;; simple parallel test: list
              (dtest
-              (next 10)
-              (parallelc it 
-                         (list (next (+ x 3))
-                               (next (+ x 4))))))
+              (parallel
+               (list (next 13)
+                     (next 14)))))
 
      (expect '((a . 20) (b . 30))
              ;; simple parallel test: alist
              (dtest
-              (next 10)
-              (parallelc it 
-                         (list (cons 'a (next (+ x 10)))
-                               (cons 'b (next (+ x 20)))))))
+              (parallel
+               (list (cons 'a (next 20))
+                     (cons 'b (next 30))))))
 
      (expect '(0 1)
              ;; simple parallel test: function list
              (dtest
               (parallel 
-               (lambda (x) 0) (lambda (x) 1))))
+               (lambda () 0) (lambda () 1))))
 
      (expect '(0 1)
              ;; nested deferred and order change test
              (dtest
               (parallel
-               (lambda (x) (dnew 0))
+               (lambda () (next 0))
                (next 1))))
 
      (expect "(ERROR OK ERROR2)"
@@ -386,31 +474,37 @@
                (list (next (deferred:not-called-func "parallel 1"))
                      (next (deferred:not-called-func "parallel 2"))))
               (cancelc it)))
-     
+
+     (expect "nest parallel ok"
+             ;; parallel next
+             (lexical-let* ((flow (lambda (x)
+                                    (parallel
+                                     (next "nest ") 
+                                     (next "parallel ")))))
+               (dtest
+                (next  "start ")
+                (nextc it (funcall flow x))
+                (nextc it (apply 'concat x))
+                (nextc it (concat x "ok")))))
+
      (desc "> earlier")
      (expect nil
              ;; nil test
              (dtest
               (earlier '())))
 
-     (expect 100
-             ;; nil test2
-             (dtest
-              (next 100)
-              (earlierc it '())))
-
      (expect 1
              ;; single job test: argument
              (dtest
               (earlier 
-               (next 1))
+               (nextc (wait 10) 1))
               (nextc it x)))
 
      (expect 1
              ;; single job test: function
              (dtest
               (earlier 
-               (lambda (x) 1))
+               (lambda () 1))
               (nextc it x)))
 
      (expect 1
@@ -437,40 +531,37 @@
      (expect '11
              ;; simple earlier test: argument
              (dtest
-              (next 10)
-              (earlierc it 
-                         (next (+ x 1)) (next (+ x 2)))
+              (earlier
+               (next 11) (next 12))
               (nextc it x)))
 
      (expect '13
              ;; simple earlier test: list
              (dtest
-              (next 10)
-              (earlierc it 
-                         (list (next (+ x 3)) (next (+ x 4))))
+              (earlier
+               (list (next 13) (next 14)))
               (nextc it x)))
 
      (expect '(a . 20)
              ;; simple earlier test: alist
              (dtest
-              (next 10)
-              (earlierc it 
-                         (list (cons 'a (next (+ x 10)))
-                               (cons 'b (next (+ x 20)))))
+              (earlier
+               (list (cons 'a (next 20))
+                     (cons 'b (next 30))))
               (nextc it x)))
 
      (expect '0
              ;; simple earlier test: function list
              (dtest
               (earlier 
-               (lambda (x) 0) (lambda (x) 1))
+               (lambda () 0) (lambda () 1))
               (nextc it x)))
 
      (expect '1
              ;; nested deferred and order change test
              (dtest
               (earlier
-               (lambda (x) (dnew 0))
+               (lambda () (dnew 0))
                (next 1))))
 
      (expect "OK"
@@ -532,11 +623,11 @@
              (dtest
               (chain
                (list 
-                (lambda (x) 10)
+                (lambda (x) 'dummy)
                 (list
-                 (lambda (x) (+ x 1))
-                 (lambda (x) (+ x 2)))
-                (lambda (ar) 
+                 (lambda () 11)
+                 (lambda () 12))
+                (lambda (ar)
                   (apply 
                    'concat 
                    (mapcar 'number-to-string ar)))))))
@@ -555,7 +646,7 @@
              (dtest
               (chain
                (list
-                (lambda (x) (dnew "nested"))
+                (lambda (x) (next "nested"))
                 (lambda (x) (concat x " chain"))))))
 
      (expect nil
