@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2010  SAKURAI Masashi
 
-;; Author: SAKURAI Masashi <m.sakurai@kiwanami.net>
-;; Keywords: lisp, async
+;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
+;; Keywords: deferred, async
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,41 +20,112 @@
 
 ;;; Commentary:
 
-;; deferred is a simple library for asyncronous tasks.  The API is
-;; almost the same as JSDeferred written by cho45. (See the web site
-;; http://coderepos.org/share/wiki/JSDeferred)
+;; 'deferred.el' is a simple library for asynchronous tasks.  The API
+;; is almost the same as JSDeferred written by cho45. See the
+;; JSDeferred and Mochikit.Async web sites for further documentations.
+;; [http://github.com/cho45/jsdeferred]
+;; [http://mochikit.com/doc/html/MochiKit/Async.html]
 
-;;; API
+;; A good introduction document (JavaScript)
+;; [http://cho45.stfuawsc.com/jsdeferred/doc/intro.en.html]
 
-;; deferred:new
-;; deferred:start
+;;; Samples:
 
-;; deferred:call
-;; deferred:apply
+;; ** HTTP Access
 
-;; deferred:next
-;; deferred:nextc
+;; (require 'url)
+;; (deferred:$
+;;   (deferred:url-retrieve "http://www.gnu.org")
+;;   (deferred:nextc it
+;;     (lambda (buf)
+;;       (insert  (with-current-buffer buf (buffer-string)))
+;;       (kill-buffer buf))))
 
-;; deferred:wait
+;; ** Invoking command tasks
 
-;; deferred:loop
+;; (deferred:$
+;;   (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
+;;   (deferred:nextc it
+;;     (lambda (x) (deferred:process "convert" "a.jpg" "-resize" "100x100" "jpg:b.jpg")))
+;;   (deferred:nextc it
+;;     (lambda (x)
+;;       (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
 
-;; deferred:error
-;; deferred:cancel
 
-;; deferred:parallel
-;; deferred:earlier
-;; deferred:chain
+;;; API Guide
 
-;; deferred:process
+;; ** Base functions
 
-;;; Notes
+;; * deferred:next(fun) -> d
+;; Execute a function asynchronously.
 
-;; The difference from JSDeferred 
+;; * deferred:nextc(d, fun) -> d
+;; Add a callback function to the deferred object.
 
-;;
+;; * deferred:error(d, fun) -> d
+;; Add a errorback function to the deferred object.
 
-;; 
+;; * deferred:cancel(d) -> d
+;; Cancel the deferred task.
+
+;; * deferred:wait(msec) -> d
+;; Return a deferred object that will be called after the specified millisecond.
+
+;; * deferred:$
+;; Anaphoric macro for deferred chains.
+
+;; ** Utility functions
+
+;; * deferred:loop(num, fun) -> d
+;; Iterate the function for the specified times.
+
+;; * deferred:parallel(fun1, fun2, ...) -> d
+;; Execute given functions in parallel and wait for all callback values.
+
+;; * deferred:earlier(fun1, fun2, ...) -> d
+;; Execute given functions in parallel and wait for the first callback value.
+
+;; * deferred:chain(fun1, fun2, ...) -> d
+;; Connect given functions as a deferred chain.
+
+;; ** deferred instance methods
+
+;; * deferred:new(&optional fun) -> d
+;; Create a deferred object.
+
+;; * deferred:callback(value)
+;; Start callback chain.
+
+;; * deferred:errorback(error)
+;; Start errorback chain.
+
+;; * deferred:callback-post(value)
+;; Start callback chain asynchronously.
+
+;; * deferred:callback-post(error)
+;; Start errorback chain asynchronously.
+
+;; ** Wrapper function
+
+;; * deferred:call(fun, arg1, arg2, ...) -> d
+;; * deferred:apply(fun, arg-list) -> d
+;; Call the function asynchronously.
+
+;; * deferred:process(cmd, args, ...) -> d
+;; Execute the command asynchronously.
+
+;; * deferred:url-retrieve(url) -> d
+;; Retrieve an content of the url asynchronously.
+
+;; ** Applications
+
+;; *Inertial scrolling for Emacs
+;; [http://github.com/kiwanami/emacs-inertial-scroll]
+
+;; This program makes simple multi-thread function, using
+;; deferred.el.
+
+
 
 (eval-when-compile
   (require 'cl))
@@ -108,7 +179,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Backend functions of deferred tasks
+;; Back end functions of deferred tasks
 
 (defvar deferred:queue nil
   "[internal] The execution queue of deferred objects. 
@@ -139,7 +210,7 @@ an argument value for execution of the deferred task."
   (setq deferred:queue nil))
 
 (defun deferred:esc-msg (msg)
-  "[internal] Escaping the charactor '%'."
+  "[internal] Escaping the character '%'."
   (replace-regexp-in-string
    "\\([^%]\\)%\\([^%]\\)" "\\1%%\\2" msg))
 
@@ -184,8 +255,8 @@ so that the deferred task will not be called twice."
   "[internal] Default errorback function."
   (error error-msg))
 
-(defun deferred:default-canceller (d)
-  "[internal] Default cancelling function."
+(defun deferred:default-cancel (d)
+  "[internal] Default canceling function."
   (deferred:message "CANCEL : %s" d)
   (setf (deferred-callback d) 'deferred:default-callback)
   (setf (deferred-errorback d) 'deferred:default-errorback)
@@ -196,7 +267,7 @@ so that the deferred task will not be called twice."
 ;; 
 ;; callback    : a callback function (default `deferred:default-callback')
 ;; errorback   : an errorback function (default `deferred:default-errorback')
-;; canceller   : a cancelling function (default `deferred:default-canceller')
+;; cancel      : a canceling function (default `deferred:default-cancel')
 ;; next        : a next chained deferred object (default nil)
 ;; status      : if 'ok or 'ng, this deferred has a result (error) value. (default nil)
 ;; value       : saved value (default nil)
@@ -204,7 +275,7 @@ so that the deferred task will not be called twice."
 (defstruct deferred
   (callback 'deferred:default-callback)
   (errorback 'deferred:default-errorback)
-  (canceller 'deferred:default-canceller)
+  (cancel 'deferred:default-cancel)
   next status value)
 
 (defun deferred:set-next (prev next)
@@ -274,7 +345,7 @@ an argument value for execution of the deferred task."
     (make-deferred)))
 
 (defun deferred:callback (d &optional arg)
-  "Start deferred chain with a callback messag."
+  "Start deferred chain with a callback message."
   (deferred:exec-task d 'ok arg))
 
 (defun deferred:errorback (d &optional arg)
@@ -292,7 +363,7 @@ an argument value for execution of the deferred task."
 (defun deferred:cancel (d)
   "Cancel all callbacks and deferred chain in the deferred object."
   (deferred:message "CANCEL : %s" d)
-  (funcall (deferred-canceller d) d)
+  (funcall (deferred-cancel d) d)
   d)
 
 (defun deferred:status (d)
@@ -338,7 +409,7 @@ an argument value for execution of the deferred task."
 (defun deferred:next (&optional callback arg)
   "Create a deferred object and schedule executing. This function
 is a short cut of following code:
- (deferred:callback-post (deferred:new aform))."
+ (deferred:callback-post (deferred:new callback))."
   (let ((d (if callback
                (make-deferred :callback callback)
              (make-deferred))))
@@ -367,10 +438,10 @@ is a short cut of following code:
                     (deferred:exec-task d 'ok 
                       (* 1000.0 (- (float-time) start-time)))
                     nil) msec))
-    (setf (deferred-canceller d) 
+    (setf (deferred-cancel d) 
           (lambda (x) 
             (deferred:cancelTimeout timer)
-            (deferred:default-canceller x)))
+            (deferred:default-cancel x)))
     d))
 
 
@@ -407,15 +478,15 @@ is a short cut of following code:
                               (lexical-let ((i i) (func func))
                                 (deferred:nextc ld (lambda (x) (funcall func i)))))
                         finally return ld)))))
-      (setf (deferred-canceller rd)
-            (lambda (x) (deferred:default-canceller x)
+      (setf (deferred-cancel rd)
+            (lambda (x) (deferred:default-cancel x)
               (loop for i in items
                     do (deferred:cancel i))))
       rd)))
 
 (defun deferred:parallel (&rest args)
   "Return a deferred object that calls given deferred objects or
-functions parallelly and wait for all callbacks. The following
+functions in parallel and wait for all callbacks. The following
 deferred task will be called with an array of the return
 values. ARGS can be a list or an alist of deferred objects or
 functions."
@@ -446,8 +517,8 @@ functions."
   (lexical-let*
       ((pd (deferred:parallel-main (deferred:parallel-array-to-alist lst)))
        (rd (deferred:nextc pd 'deferred:parallel-alist-to-array)))
-    (setf (deferred-canceller rd)
-          (lambda (x) (deferred:default-canceller x)
+    (setf (deferred-cancel rd)
+          (lambda (x) (deferred:default-cancel x)
             (deferred:cancel pd)))
     rd))
 
@@ -509,7 +580,7 @@ functions."
 
 (defun deferred:earlier (&rest args)
   "Return a deferred object that calls given deferred objects or
-functions parallelly and wait for the first callback. The
+functions in parallel and wait for the first callback. The
 following deferred task will be called with the first return
 value. ARGS can be a list or an alist of deferred objects or
 functions."
@@ -523,8 +594,8 @@ functions."
   (lexical-let*
       ((pd (deferred:earlier-main (deferred:parallel-array-to-alist lst)))
        (rd (deferred:nextc pd (lambda (x) (cdr x)))))
-    (setf (deferred-canceller rd)
-          (lambda (x) (deferred:default-canceller x)
+    (setf (deferred-cancel rd)
+          (lambda (x) (deferred:default-cancel x)
             (deferred:cancel pd)))
     rd))
 
@@ -599,9 +670,9 @@ a following function is translated into an errorback task."
               (setq d (deferred:parallel i)))
              (t
               (error "A wrong object was given for chain : %s" i))))))
-    (setf (deferred-canceller d)
+    (setf (deferred-cancel d)
           (lambda (x)
-            (deferred:default-canceller x)
+            (deferred:default-cancel x)
             (deferred:cancel first)))
     d))
 
@@ -617,9 +688,9 @@ a following function is translated into an errorback task."
   "[internal] Generate a sequence number."
   (incf deferred:uid))
 
-(defun deferred:buffer-string (format buf)
+(defun deferred:buffer-string (strformat buf)
   "[internal] Return a string in the buffer with the given format."
-  (format format
+  (format strformat
           (with-current-buffer buf (buffer-string))))
 
 (defun deferred:process (command &rest args)
@@ -647,7 +718,7 @@ process."
                    (cond
                     ((string-match "exited abnormally" event)
                      (let ((msg (if (buffer-live-p proc-buf)
-                                    (deferred:buffer-string "%s" tmpbuf)
+                                    (deferred:buffer-string "%s" proc-buf)
                                   (concat "NA:" proc-name))))
                        (kill-buffer proc-buf)
                        (deferred:post-task nd 'ng msg)))
@@ -658,8 +729,8 @@ process."
                                        (concat "NA:" proc-name))
                                    (kill-buffer proc-buf))))
                        (deferred:post-task nd 'ok msg))))))
-                (setf (deferred-canceller nd) 
-                      (lambda (x) (deferred:default-canceller x)
+                (setf (deferred-cancel nd) 
+                      (lambda (x) (deferred:default-cancel x)
                         (when proc
                           (kill-process proc)
                           (kill-buffer proc-buf)))))
