@@ -118,6 +118,30 @@
     (expectations
 
      (desc ">>> Basic Test")
+
+     (expect 1 (deferred:call-lambda (lambda ()  1)))
+     (expect 1 (deferred:call-lambda (lambda ()  1) 1))
+     (expect 1 (deferred:call-lambda (lambda (x) 1)))
+     (expect 1 (deferred:call-lambda (lambda (x) 1) 1))
+     (expect 1 (deferred:call-lambda (deferred:lambda () 1)))
+     (expect 1 (deferred:call-lambda (deferred:lambda () 1) 1))
+     (expect nil (deferred:call-lambda 'car))
+     (expect 2 (deferred:call-lambda 'car '(2 1)))
+     (expect nil (deferred:call-lambda (symbol-function 'car)))
+     (expect 2 (deferred:call-lambda (symbol-function 'car) '(2 1)))
+     (expect 3 (lexical-let ((st 1))
+                 (deferred:call-lambda
+                   (lambda () (+ st 2)))))
+     (expect 3  (lexical-let ((st 1))
+                  (deferred:call-lambda
+                    (lambda () (+ st 2)) 0)))
+     (expect 3 (lexical-let ((st 1))
+                 (deferred:call-lambda
+                   (lambda (x) (+ st 2)))))
+     (expect 3  (lexical-let ((st 1))
+                  (deferred:call-lambda
+                    (lambda (x) (+ st 2)) 0)))
+
      (expect (true) 
              ;; function test
              (deferred:new))
@@ -623,7 +647,7 @@
              (dtest
               (chain
                (list 
-                (lambda (x) 'dummy)
+                (lambda () 'dummy)
                 (list
                  (lambda () 11)
                  (lambda () 12))

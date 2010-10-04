@@ -148,6 +148,14 @@
              `(setq it ,i))
      it))
 
+(defmacro deferred:lambda (args &rest body)
+  "Anaphoric lambda macro for self recursion."
+  (let ((argsyms (loop for i in args collect (gensym))))
+  `(lambda (,@argsyms)
+     (lexical-let (self)
+       (setq self (lambda( ,@args ) ,@body))
+       (funcall self ,@argsyms)))))
+
 (defun deferred:setTimeout (f msec)
   "[internal] Timer function that emulates the `setTimeout' function in JS."
   (run-at-time (/ msec 1000.0) nil f))
@@ -155,6 +163,47 @@
 (defun deferred:cancelTimeout (id)
   "[internal] Timer cancellation function that emulates the `cancelTimeout' function in JS."
   (cancel-timer id))
+
+(defun deferred:call-lambda (f &optional arg)
+  "[internal] Call a function with one or zero argument safely.
+The lambda function can define with zero and one argument, like followings:
+
+ (deferred:call-lambda (lambda ()  1))                => 1
+ (deferred:call-lambda (lambda ()  1) 1)              => 1
+ (deferred:call-lambda (lambda (x) 1))                => 1
+ (deferred:call-lambda (lambda (x) 1) 1)              => 1
+ (deferred:call-lambda (deferred:lambda () 1))        => 1
+ (deferred:call-lambda (deferred:lambda () 1) 1)      => 1
+ (deferred:call-lambda 'car)                          => nil
+ (deferred:call-lambda 'car '(2 1))                   => 2
+ (deferred:call-lambda (symbol-function 'car))        => nil
+ (deferred:call-lambda (symbol-function 'car) '(2 1)) => 2
+ (lexical-let ((st 1)) (deferred:call-lambda (lambda ()  (+ st 2))))   => 3
+ (lexical-let ((st 1)) (deferred:call-lambda (lambda ()  (+ st 2)) 0)) => 3
+ (lexical-let ((st 1)) (deferred:call-lambda (lambda (x) (+ st 2))))   => 3
+ (lexical-let ((st 1)) (deferred:call-lambda (lambda (x) (+ st 2)) 0)) => 3
+"
+  (cond
+   ((or (subrp f) (symbolp f))
+    (funcall f arg))
+   ((eq (car f) 'lambda)
+    (let ((largs (cadr f)))
+      (cond
+       ((and (eq (car largs) '&rest)
+             (eq (cadr largs) '--cl-rest--)) ; lexical-scope hack
+        (let ((inner-lambda (cadr (cadr (caddr f))))
+              (inner-args (cddr (caddr f))))
+          (if (= (length inner-lambda) 
+                 (length inner-args))
+              (funcall f arg)
+            (funcall f))))
+       (t
+        (if (= (length (cadr f)) 0)
+            (funcall f)
+          (funcall f arg))))))
+   (t
+    (funcall f arg))))
+
 
 ;; debug
 
@@ -309,7 +358,7 @@ an argument value for execution of the deferred task."
         (condition-case err
             (progn 
               (setq value
-                    (apply callback (list arg)))
+                    (deferred:call-lambda callback arg))
               (cond
                ((deferred-p value)
                 (deferred:message "WAIT NEST : %s" value)
@@ -325,7 +374,7 @@ an argument value for execution of the deferred task."
             (next-deferred
              (deferred:post-task next-deferred 'ng (error-message-string err)))
             (deferred:onerror
-              (funcall deferred:onerror err))
+              (deferred:call-lambda deferred:onerror err))
             (t
              (error (deferred:esc-msg (error-message-string err)))))))))
      ((null callback)
@@ -470,7 +519,7 @@ is a short cut of following code:
                         (push ld items)
                         (setq ld 
                               (lexical-let ((i i) (func func))
-                                (deferred:nextc ld (lambda (x) (funcall func i)))))
+                                (deferred:nextc ld (lambda (x) (deferred:call-lambda func i)))))
                         finally return ld))
                  ((listp times-or-list)
                   (loop for i in times-or-list
@@ -479,7 +528,7 @@ is a short cut of following code:
                         (push ld items)
                         (setq ld 
                               (lexical-let ((i i) (func func))
-                                (deferred:nextc ld (lambda (x) (funcall func i)))))
+                                (deferred:nextc ld (lambda (x) (deferred:call-lambda func i)))))
                         finally return ld)))))
       (setf (deferred-cancel rd)
             (lambda (x) (deferred:default-cancel x)
@@ -545,7 +594,7 @@ functions."
         collect
         (progn 
           (unless (deferred-p d)
-            (setf (cdr pair) (deferred:call d)))
+            (setf (cdr pair) (deferred:next d)))
           pair)))
 
 (defun deferred:parallel-main (alst)
