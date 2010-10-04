@@ -792,11 +792,13 @@ process."
 
 (eval-after-load "url"
   ;; for url package
+  ;; TODO: cookie, proxy
   '(progn
+
      (defun deferred:url-retrieve (url &optional cbargs)
        "A wrapper function for url-retrieve. The next deferred
-     object receives the buffer object that URL will load into.
-     Currently dynamic binding variables are not supported."
+object receives the buffer object that URL will load
+into. Currently dynamic binding variables are not supported."
        (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf)
          (deferred:next
            (lambda (x)
@@ -805,7 +807,68 @@ process."
                     url (lambda (xx) (deferred:post-task nd 'ok buf))
                     cbargs))
              nil))
-         nd))))
+         (setf (deferred-cancel nd)
+               (lambda (x) 
+                 (when (buffer-live-p buf)
+                   (kill-buffer buf))))
+         nd))
+
+     (defun deferred:url-get (url &optional params)
+       "Perform a HTTP GET method with `url-retrieve'. PARAMS is
+a parameter list of (key . value) or key. The next deferred
+object receives the buffer object that URL will load into."
+       (when params
+         (setq url
+               (concat url "?" (deferred:url-param-serialize params))))
+       (deferred:url-retrieve url))
+
+     (defun deferred:url-post (url &optional params)
+       "Perform a HTTP POST method with `url-retrieve'. PARAMS is
+a parameter list of (key . value) or key. The next deferred
+object receives the buffer object that URL will load into."
+       (lexical-let ((nd (deferred:new)) 
+                     (url url) (args args)
+                     (cbargs cbargs) buf)
+         (deferred:next
+           (lambda (x)
+             (let ((url-request-method "POST")
+                   (url-request-extra-headers
+                    '(("Content-Type" . "application/x-www-form-urlencoded")))
+                   (url-request-data
+                    (deferred:url-param-serialize params)))
+               (setq buf 
+                     (url-retrieve 
+                      url 
+                      (lambda (xx) (deferred:post-task nd 'ok buf)))))
+             nil))
+         (setf (deferred-cancel nd)
+               (lambda (x) 
+                 (when (buffer-live-p buf)
+                   (kill-buffer buf))))
+         nd))
+
+     (defun deferred:url-escape (val)
+       "[internal] Return a new string that is VAL URI-encoded."
+       (unless (stringp val)
+         (setq val (format "%s" val)))
+       (url-hexify-string 
+        (encode-coding-string val 'utf-8)))
+
+     (defun deferred:url-param-serialize (params)
+       "[internal] Serialize a list of (key . value) cons cells
+into a query string."
+       (mapconcat
+        (loop for p in parmas
+              collect
+              (cond
+               ((consp p)
+                (concat 
+                 (deferred:url-escape (car p)) "="
+                 (deferred:url-escape (cdr p))))
+               (t
+                (deferred:url-escape p))))
+        "&"))
+     ))
 
 
 (provide 'deferred)
