@@ -1,17 +1,21 @@
+;; deferred.el samples
+
+(require 'deferred)
+
 ;;; Basic Chain
 
 (deferred:$
   (deferred:next 
-    (lambda (x) (message "deferred start")))
+    (lambda () (message "deferred start")))
   (deferred:nextc it
-    (lambda (x) 
+    (lambda () 
       (message "chain 1")
       1))
   (deferred:nextc it
     (lambda (x)
       (message "chain 2 : %s" x)))
   (deferred:nextc it
-    (lambda (x)
+    (lambda ()
       (read-minibuffer "Input a number: ")))
   (deferred:nextc it
     (lambda (x)
@@ -19,6 +23,24 @@
   (deferred:error it
     (lambda (err)
       (message "Wrong input : %s" err))))
+
+
+;;; Timer
+
+(deferred:$
+  (deferred:wait 1000) ; 1000msec
+  (deferred:nextc it
+    (lambda (x)
+      (message "Timer sample! : %s msec" x))))
+
+
+;;; Command process
+
+(deferred:$
+  (deferred:process "ls" "-la")
+  (deferred:nextc it
+    (lambda (x) (insert x))))
+
 
 ;;; Web Access
 
@@ -46,6 +68,18 @@
         'png t))
       (kill-buffer buf))))
 
+;; HTTP POST 
+
+(deferred:$
+  (deferred:url-post
+    "http://127.0.0.1:8080/post-test.cgi"
+    '(('a . "test") ('param . "OK")))
+  (deferred:nextc it
+    (lambda (buf)
+      (insert (with-current-buffer buf (buffer-string)))
+      (kill-buffer buf))))
+
+
 ;; Parallel deferred
 
 (deferred:$
@@ -72,9 +106,9 @@
   (deferred:$
     (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
     (deferred:nextc it
-      (lambda (x) (deferred:process "convert" "a.jpg" "-resize" "100x100" "jpg:b.jpg")))
+      (lambda () (deferred:process "convert" "a.jpg" "-resize" "100x100" "jpg:b.jpg")))
     (deferred:nextc it
-      (lambda (x)
+      (lambda ()
         (clear-image-cache)
         (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
 
@@ -85,10 +119,48 @@
 
   ;; finally
   (deferred:nextc it
-    (lambda (x)
+    (lambda ()
       (deferred:parallel
         (lambda () (delete-file "a.jpg"))
         (lambda () (delete-file "b.jpg")))))
   (deferred:nextc it
     (lambda (x) (message ">> %s" x))))
+
+
+;; Timeout Process
+
+(deferred:$
+  (deferred:earlier
+    (deferred:process "sh" "-c" "sleep 3 | echo 'hello!'")
+    (deferred:$
+      (deferred:wait 1000) ; timeout msec
+      (deferred:nextc it (lambda () "canceled!"))))
+  (deferred:nextc it
+    (lambda (x) (insert x))))
+
+
+;; Loop and animation
+
+(lexical-let ((count 0) (anm "-/|\\-")
+              (end 50) (pos (point))
+              (wait-time 50))
+  (deferred:$
+    (deferred:next
+      (lambda (x) (message "Animation started.")))
+
+    (deferred:nextc it
+      (deferred:lambda (x)
+        (save-excursion
+          (when (< 0 count)
+            (goto-char pos) (delete-char 1))
+          (insert (char-to-string 
+                   (aref anm (% count (length anm))))))
+        (if (> end (incf count))
+            (deferred:nextc (deferred:wait wait-time) self))))
+
+    (deferred:nextc it
+      (lambda (x)
+        (save-excursion
+          (goto-char pos) (delete-char 1))
+        (message "Animation finished.")))))
 
