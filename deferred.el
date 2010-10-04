@@ -98,6 +98,8 @@
 
 ;; * deferred:errorback(error)
 ;; Start errorback chain.
+;; All errors occurred in deferred tasks are cought by errorback handlers.
+;; If you want to debug the error, set `debug-on-signal' to non-nil.
 
 ;; * deferred:callback-post(value)
 ;; Start callback chain asynchronously.
@@ -206,13 +208,14 @@ an argument value for execution of the deferred task."
 
 (defun deferred:clear-queue ()
   "Clear the execution queue. For test and debugging."
+  (interactive)
   (deferred:message "QUEUE-CLEAR [%s -> 0]" (length deferred:queue))
   (setq deferred:queue nil))
 
 (defun deferred:esc-msg (msg)
   "[internal] Escaping the character '%'."
   (replace-regexp-in-string
-   "\\([^%]\\)%\\([^%]\\)" "\\1%%\\2" msg))
+   "\\([^%]\\|^\\)%\\([^%]\\)" "\\1%%\\2" msg))
 
 (defun deferred:worker ()
   "[internal] Consume a deferred task. 
@@ -253,7 +256,7 @@ so that the deferred task will not be called twice."
 
 (defun deferred:default-errorback (error-msg)
   "[internal] Default errorback function."
-  (error error-msg))
+  (error (deferred:esc-msg error-msg)))
 
 (defun deferred:default-cancel (d)
   "[internal] Default canceling function."
