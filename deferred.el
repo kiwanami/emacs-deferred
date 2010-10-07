@@ -85,9 +85,6 @@
 ;; * deferred:earlier(fun1, fun2, ...) -> d
 ;; Execute given functions in parallel and wait for the first callback value.
 
-;; * deferred:chain(fun1, fun2, ...) -> d
-;; Connect given functions as a deferred chain.
-
 ;; ** deferred instance methods
 
 ;; * deferred:new(&optional fun) -> d
@@ -100,6 +97,7 @@
 ;; Start errorback chain.
 ;; All errors occurred in deferred tasks are cought by errorback handlers.
 ;; If you want to debug the error, set `debug-on-signal' to non-nil.
+;; (setq debug-on-signal t)
 
 ;; * deferred:callback-post(value)
 ;; Start callback chain asynchronously.
@@ -685,48 +683,6 @@ functions."
                   (deferred:post-task nd 'ok nil))
                 nil))))
     nd))
-
-
-(defun deferred:chain (args)
-  "Build and return a deferred chain with the given functions and
-deferred objects. The deferred object is a chain of the given
-functions and deferred objects. A nested list in ARGS is
-translated into a parallel task. A set of the symbol `:error' and
-a following function is translated into an errorback task."
-  (lexical-let* ((first (deferred:next)) (d first))
-    (cond
-     ((null args) nil)
-     (t
-      (loop for i in args
-            with onerror-flag = nil
-            do
-            (cond
-             ((eq ':error i)
-              (setq onerror-flag t))
-             (onerror-flag
-              (setq onerror-flag nil)
-              (setq d 
-                    (cond
-                     ((deferred-p i) 
-                      (deferred:set-next d i) i)
-                     ((functionp i)
-                      (deferred:error d i))
-                     (t
-                      (error "A wrong object was given for chain : %s" i)))))
-             ((deferred-p i)
-              (deferred:set-next d i)
-              (setq d i))
-             ((functionp i)
-              (setq d (deferred:nextc d i)))
-             ((listp i)
-              (setq d (deferred:parallel i)))
-             (t
-              (error "A wrong object was given for chain : %s" i))))))
-    (setf (deferred-cancel d)
-          (lambda (x)
-            (deferred:default-cancel x)
-            (deferred:cancel first)))
-    d))
 
 
 

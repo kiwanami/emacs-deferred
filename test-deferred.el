@@ -66,9 +66,6 @@
 (defmacro earlier(&rest args)
   `(deferred:earlier ,@args))
 
-(defmacro chain(&rest args)
-  `(deferred:chain ,@args))
-
 (defmacro flush ()
   `(deferred:flush-queue!))
 
@@ -627,61 +624,6 @@
                      (next (deferred:not-called-func "earlier 2"))))
               (cancelc it)))
      
-     (desc "> chain")
-
-     (expect nil
-             ;; nil test
-             (dtest
-              (chain '())))
-
-     (expect "simple chain"
-             ;; simple chain test
-             (dtest
-              (chain
-               (list
-                (lambda (x) "simple")
-                (lambda (x) (concat x " chain"))))))
-
-     (expect "1112"
-             ;; parallel chain test
-             (dtest
-              (chain
-               (list 
-                (lambda () 'dummy)
-                (list
-                 (lambda () 11)
-                 (lambda () 12))
-                (lambda (ar)
-                  (apply 
-                   'concat 
-                   (mapcar 'number-to-string ar)))))))
-
-     (expect "error ok!"
-             ;; errorback chain test
-             (dtest
-              (chain
-               (list
-                (lambda (x) (error "error"))
-                ':error (lambda (x) (concat x " ok"))
-                (lambda (x) (concat x "!"))))))
-
-     (expect "nested chain"
-             ;; nested chain test
-             (dtest
-              (chain
-               (list
-                (lambda (x) (next "nested"))
-                (lambda (x) (concat x " chain"))))))
-
-     (expect nil
-             ;; cancel test
-             (dtest
-              (chain
-               (list
-                (lambda (x) (deferred:not-called-func "chain 1"))
-                (lambda (x) (deferred:not-called-func "chain 2"))))
-              (cancelc it)))
-
      (desc ">>>Application")
 
      (expect 
