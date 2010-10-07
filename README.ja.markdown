@@ -1,10 +1,10 @@
 # deferred.el #
 
 deferred.elは非同期処理を抽象化して書きやすくするためのライブラリです。APIや
-実装については cho45 さんによる
-[JSDeferred](http://github.com/cho45/jsdeferred "JSDeferred") と
+実装については 
+[JSDeferred](http://github.com/cho45/jsdeferred "JSDeferred") (by cho45さん)と
 [Mochikit.Async](http://mochikit.com/doc/html/MochiKit/Async.html
-"Mochikit.Async") を参考にしています。
+"Mochikit.Async") (by Bob Ippolitoさん)を参考にしています。
 
 ## インストール ##
 
