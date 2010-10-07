@@ -288,13 +288,13 @@ Loop and animation:
 
 複数のdeferredを扱う関数です。
 
-* loop
+* deferred:loop
   * 引数：1以上の整数もしくはリスト、引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の数値で指定された数だけループするようなdeferredオブジェクトを生成して返します。関数には0から始まるカウンタが渡ってきます。
   * 整数ではなくリストが渡ってきた場合は、mapcのようにループします。
 
-* parallel
+* deferred:parallel
   * 引数：以下のどちらか
     * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
     * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
@@ -304,7 +304,7 @@ Loop and animation:
   * 引数にalistが渡した場合は、結果もalistで渡ります。この場合は順番は保持されません。
   * deferred処理の中でエラーが発生した場合は、結果のリストの中にエラーオブジェクトが入ります。
 
-* earlier
+* deferred:earlier
   * 引数：以下のどちらか
     * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
     * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
@@ -319,35 +319,35 @@ Loop and animation:
 
 元からある処理をdeferredでラップする関数です。
 
-* call
+* deferred:call
   * 引数：関数のシンボル、引数（可変長）
   * 返値：deferredオブジェクト
   * オリジナルのcallを非同期にした関数です
 
-* apply
+* deferred:apply
   * 引数：関数のシンボル、引数（リスト）
   * 返値：deferredオブジェクト
   * オリジナルのapplyを非同期にした関数です
 
-* process
+* deferred:process
   * 引数：文字列（外部実行コマンド）、文字列（可変長、コマンドの引数）
   * 返値：deferredオブジェクト
   * 外部コマンドを非同期で実行します。
   * 外部コマンドのstdoutの結果が文字列として後続のdeferredに渡ります。
 
-* url-retrieve
+* deferred:url-retrieve
   * 引数：文字列（URL）、オリジナルのコールバック引数（省略可）
   * 返値：deferredオブジェクト
   * urlパッケージにある、オリジナルのurl-retrieveをdeferredでラップした関数です。
   * HTTPで取得した結果が、後続のdeferredにバッファで渡ります。
     * バッファの処分は後続のdeferredに任されます。
 
-* url-get（仮）
+* deferred:url-get（仮）
   * 引数：文字列（URL）、パラメーターのalist
   * 返値：deferredオブジェクト
   * パラメーターを指定しやすくした関数です。仮実装ですので今後仕様が変わる可能性があります。
 
-* url-post（仮）
+* deferred:url-post（仮）
   * 引数：文字列（URL）、パラメーターのalist
   * 返値：deferredオブジェクト
   * パラメーターを指定しやすくして、POSTでアクセスする関数です。仮実装ですので今後仕様が変わる可能性があります。
@@ -356,42 +356,42 @@ Loop and animation:
 
 プリミティブな操作を行う関数です。典型的でないdeferred処理を行いたい場合に、組み合わせて使います。
 
-* new
+* deferred:new
   * 引数：引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。
   * 実行キューに入れないため、deferred:callbackやdeferred:errorbackが呼ばれない限り実行されません。
   * 一時停止して他のイベントを待つような、deferredチェインを作りたいときに使います。 → deferred:wait のソースなどを参考。
 
-* succeed
+* deferred:succeed
   * 引数：値（省略可）
   * 返値：deferredオブジェクト
   * 引数の値を使って、既にコールバックが呼ばれた状態のdeferredを返します。
   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
-* fail
+* deferred:fail
   * 引数：値（省略可）
   * 返値：deferredオブジェクト
   * 引数の値を使って、既にエラーバックが呼ばれた状態のdeferredを返します。
   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
-* callback
+* deferred:callback
   * 引数：deferredオブジェクト、値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトを同期的に開始します。
   * ただし、同期的な実行は初回のみで、引数のdeferred以降のdeferredオブジェクトは非同期に実行されます。
 
-* callback-post
+* deferred:callback-post
   * 引数：deferredオブジェクト、値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトを非同期に開始します。
 
-* errorback
+* deferred:errorback
   * 引数：deferredオブジェクト、値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトからエラーバックを同期的に開始します。
 
-* errorback-post
+* deferred:errorback-post
   * 引数：deferredオブジェクト、値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトからエラーバックを非同期に開始します。
@@ -495,7 +495,7 @@ deferred.elを使うと、nextcやlambdaをたくさん書くことになると�
 deferredによってどのようなことが可能になるかなどについては、JavaScriptの例ではありますが、以下のドキュメントが大変参考になると思います。
 
 * [JSDeferred紹介](http://cho45.stfuawsc.com/jsdeferred/doc/intro.html "JSDeferred紹介")
-* [gihyo](http://gihyo.jp/dev/feature/01/jsdeferred "特集：JSDeferredで，面倒な非同期処理とサヨナラ｜gihyo.jp … 技術評論社")
+* [特集：JSDeferredで，面倒な非同期処理とサヨナラ｜gihyo.jp … 技術評論社](http://gihyo.jp/dev/feature/01/jsdeferred "特集：JSDeferredで，面倒な非同期処理とサヨナラ｜gihyo.jp … 技術評論社")
 
 
 * * * * *
