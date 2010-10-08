@@ -783,8 +783,8 @@ object receives the buffer object that URL will load into."
 a parameter list of (key . value) or key. The next deferred
 object receives the buffer object that URL will load into."
        (lexical-let ((nd (deferred:new)) 
-                     (url url) (args args)
-                     (cbargs cbargs) buf)
+                     (url url) (params params)
+                     buf)
          (deferred:next
            (lambda (x)
              (let ((url-request-method "POST")
@@ -814,7 +814,7 @@ object receives the buffer object that URL will load into."
        "[internal] Serialize a list of (key . value) cons cells
 into a query string."
        (mapconcat
-        (loop for p in parmas
+        (loop for p in params
               collect
               (cond
                ((consp p)
