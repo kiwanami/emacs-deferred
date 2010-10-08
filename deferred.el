@@ -164,43 +164,10 @@
 
 (defun deferred:call-lambda (f &optional arg)
   "[internal] Call a function with one or zero argument safely.
-The lambda function can define with zero and one argument, like followings:
-
- (deferred:call-lambda (lambda ()  1))                => 1
- (deferred:call-lambda (lambda ()  1) 1)              => 1
- (deferred:call-lambda (lambda (x) 1))                => 1
- (deferred:call-lambda (lambda (x) 1) 1)              => 1
- (deferred:call-lambda (deferred:lambda () 1))        => 1
- (deferred:call-lambda (deferred:lambda () 1) 1)      => 1
- (deferred:call-lambda 'car)                          => nil
- (deferred:call-lambda 'car '(2 1))                   => 2
- (deferred:call-lambda (symbol-function 'car))        => nil
- (deferred:call-lambda (symbol-function 'car) '(2 1)) => 2
- (lexical-let ((st 1)) (deferred:call-lambda (lambda ()  (+ st 2))))   => 3
- (lexical-let ((st 1)) (deferred:call-lambda (lambda ()  (+ st 2)) 0)) => 3
- (lexical-let ((st 1)) (deferred:call-lambda (lambda (x) (+ st 2))))   => 3
- (lexical-let ((st 1)) (deferred:call-lambda (lambda (x) (+ st 2)) 0)) => 3
-"
-  (cond
-   ((or (subrp f) (symbolp f))
-    (funcall f arg))
-   ((eq (car f) 'lambda)
-    (let ((largs (cadr f)))
-      (cond
-       ((and (eq (car largs) '&rest)
-             (eq (cadr largs) '--cl-rest--)) ; lexical-scope hack
-        (let ((inner-lambda (cadr (cadr (caddr f))))
-              (inner-args (cddr (caddr f))))
-          (if (= (length inner-lambda) 
-                 (length inner-args))
-              (funcall f arg)
-            (funcall f))))
-       (t
-        (if (= (length (cadr f)) 0)
-            (funcall f)
-          (funcall f arg))))))
-   (t
-    (funcall f arg))))
+The lambda function can define with zero and one argument."
+  (condition-case err
+      (funcall f arg)
+    ('wrong-number-of-arguments (funcall f))))
 
 
 ;; debug

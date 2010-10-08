@@ -116,6 +116,7 @@
 
      (desc ">>> Basic Test")
 
+     (desc "> call-lambda simple")
      (expect 1 (deferred:call-lambda (lambda ()  1)))
      (expect 1 (deferred:call-lambda (lambda ()  1) 1))
      (expect 1 (deferred:call-lambda (lambda (x) 1)))
@@ -126,6 +127,7 @@
      (expect 2 (deferred:call-lambda 'car '(2 1)))
      (expect nil (deferred:call-lambda (symbol-function 'car)))
      (expect 2 (deferred:call-lambda (symbol-function 'car) '(2 1)))
+     (desc "> call-lambda lexical-scope")
      (expect 3 (lexical-let ((st 1))
                  (deferred:call-lambda
                    (lambda () (+ st 2)))))
@@ -138,6 +140,26 @@
      (expect 3  (lexical-let ((st 1))
                   (deferred:call-lambda
                     (lambda (x) (+ st 2)) 0)))
+     (desc "> call-lambda byte-compile")
+     (expect 1 (deferred:call-lambda (byte-compile (lambda (x) 1))))
+     (expect 1 (deferred:call-lambda (byte-compile (lambda (x) 1)) 1))
+     (expect 1 (deferred:call-lambda (byte-compile (lambda () 1))))
+     (expect 1 (deferred:call-lambda (byte-compile (lambda () 1)) 1))
+     (desc "> call-lambda lexical-scope and byte-compile")
+     (expect 3 (lexical-let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda () (+ st 2))))))
+     (expect 3  (lexical-let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda () (+ st 2))) 0)))
+     (expect 3 (lexical-let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda (x) (+ st 2))))))
+     (expect 3  (lexical-let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda (x) (+ st 2))) 0)))
+
+     (desc "> Basic Test")
 
      (expect (true) 
              ;; function test
