@@ -654,7 +654,14 @@
         (buffer-string))
       (wtest 0.1 ;; maybe fail in some environments...
        (deferred:process "pwd")))
-      
+
+     (expect 
+      (with-temp-buffer 
+        (call-process "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process "pwd" nil)))
+     
      (expect "Searching for program: no such file or directory, pwd---"
              (dtest
               (deferred:process "pwd---")
@@ -663,4 +670,3 @@
 
      ) ;expectations
     ))
-

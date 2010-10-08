@@ -685,7 +685,9 @@ process."
           (condition-case err
               (progn
                 (setq proc
-                      (apply 'start-process proc-name buf-name command args))
+                      (if (null (car args))
+                          (apply 'start-process proc-name buf-name command nil)
+                        (apply 'start-process proc-name buf-name command args)))
                 (set-process-sentinel
                  proc
                  (lambda (proc event)
