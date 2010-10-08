@@ -237,6 +237,18 @@ See the functions `deferred:post' and `deferred:worker'.")
 (defmacro deferred:pack (a b c)
   `(cons ,a (cons ,b ,c)))
 
+(defun deferred:remove-from-queue (d)
+  "[internal] Remove the deferred object from the execution queue
+so that the deferred task will not be called twice."
+  (setq deferred:queue 
+        (loop for pack in deferred:queue
+              unless (eq d (car pack))
+              collect pack)))
+
+(defun deferred:schedule-worker ()
+  "[internal] Schedule consuming a deferred task in the execution queue."
+  (run-at-time 0.001 nil 'deferred:worker))
+
 (defun deferred:post-task (d which &optional arg)
   "[internal] Add a deferred object to the execution queue
 `deferred:queue' and schedule to execute.
@@ -248,10 +260,6 @@ an argument value for execution of the deferred task."
     (length deferred:queue) (deferred:pack d which arg))
   (deferred:schedule-worker)
   d)
-
-(defun deferred:schedule-worker ()
-  "[internal] Schedule consuming a deferred task in the execution queue."
-  (run-at-time 0.001 nil 'deferred:worker))
 
 (defun deferred:clear-queue ()
   "Clear the execution queue. For test and debugging."
@@ -280,14 +288,6 @@ Mainly this function is called by timer asynchronously."
          (message "deferred error : %s" err)))
       value)))
 
-(defun deferred:remove-from-queue (d)
-  "[internal] Remove the deferred object from the execution queue
-so that the deferred task will not be called twice."
-  (setq deferred:queue 
-        (loop for pack in deferred:queue
-              unless (eq d (car pack))
-              collect pack)))
-
 (defun deferred:flush-queue! ()
   "Call all deferred tasks synchronously. For test and debugging."
   (let (value)
@@ -296,22 +296,6 @@ so that the deferred task will not be called twice."
     value))
 
 
-
-(defun deferred:default-callback (i)
-  "[internal] Default callback function."
-  (identity i))
-
-(defun deferred:default-errorback (error-msg)
-  "[internal] Default errorback function."
-  (error (deferred:esc-msg error-msg)))
-
-(defun deferred:default-cancel (d)
-  "[internal] Default canceling function."
-  (deferred:message "CANCEL : %s" d)
-  (setf (deferred-callback d) 'deferred:default-callback)
-  (setf (deferred-errorback d) 'deferred:default-errorback)
-  (setf (deferred-next d) nil)
-  d)
 
 ;; Struct: deferred
 ;; 
@@ -328,16 +312,21 @@ so that the deferred task will not be called twice."
   (cancel 'deferred:default-cancel)
   next status value)
 
-(defun deferred:set-next (prev next)
-  "[internal] Connect deferred objects."
-  (setf (deferred-next prev) next)
-  (cond
-   ((eq 'ok (deferred-status prev))
-    (setf (deferred-status prev) nil)
-    (deferred:exec-task next 'ok (deferred-value prev)))
-   ((eq 'ng (deferred-status prev))
-    (setf (deferred-status prev) nil)
-    (deferred:exec-task next 'ng (deferred-value prev)))))
+(defun deferred:default-callback (i)
+  "[internal] Default callback function."
+  (identity i))
+
+(defun deferred:default-errorback (error-msg)
+  "[internal] Default errorback function."
+  (error (deferred:esc-msg error-msg)))
+
+(defun deferred:default-cancel (d)
+  "[internal] Default canceling function."
+  (deferred:message "CANCEL : %s" d)
+  (setf (deferred-callback d) 'deferred:default-callback)
+  (setf (deferred-errorback d) 'deferred:default-errorback)
+  (setf (deferred-next d) nil)
+  d)
 
 (defun deferred:exec-task (d which &optional arg)
   "[internal] Executing deferred task. If the deferred object has
@@ -382,6 +371,17 @@ an argument value for execution of the deferred task."
           (deferred:exec-task next-deferred which arg))
          ((eq which 'ok) arg)
          (t (error (deferred:esc-msg arg)))))))))
+
+(defun deferred:set-next (prev next)
+  "[internal] Connect deferred objects."
+  (setf (deferred-next prev) next)
+  (cond
+   ((eq 'ok (deferred-status prev))
+    (setf (deferred-status prev) nil)
+    (deferred:exec-task next 'ok (deferred-value prev)))
+   ((eq 'ng (deferred-status prev))
+    (setf (deferred-status prev) nil)
+    (deferred:exec-task next 'ng (deferred-value prev)))))
 
 
 
@@ -429,20 +429,6 @@ an argument value for execution of the deferred task."
 (defvar deferred:onerror nil 
   "Default error handler. This value is nil or a function that
   have one argument for the error message.")
-
-(defun deferred:call (f &rest args)
-  "Call the given function asynchronously."
-  (lexical-let ((f f) (args args))
-    (deferred:next
-      (lambda (x)
-        (apply f args)))))
-
-(defun deferred:apply (f &optional args)
-  "Call the given function asynchronously."
-  (lexical-let ((f f) (args args))
-    (deferred:next
-      (lambda (x)
-        (apply f args)))))
 
 (defun deferred:succeed (&optional arg)
   "Create a synchronous deferred object."
@@ -494,6 +480,20 @@ is a short cut of following code:
             (deferred:default-cancel x)))
     d))
 
+(defun deferred:call (f &rest args)
+  "Call the given function asynchronously."
+  (lexical-let ((f f) (args args))
+    (deferred:next
+      (lambda (x)
+        (apply f args)))))
+
+(defun deferred:apply (f &optional args)
+  "Call the given function asynchronously."
+  (lexical-let ((f f) (args args))
+    (deferred:next
+      (lambda (x)
+        (apply f args)))))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -534,16 +534,6 @@ is a short cut of following code:
                     do (deferred:cancel i))))
       rd)))
 
-(defun deferred:parallel (&rest args)
-  "Return a deferred object that calls given deferred objects or
-functions in parallel and wait for all callbacks. The following
-deferred task will be called with an array of the return
-values. ARGS can be a list or an alist of deferred objects or
-functions."
-  (deferred:message "PARALLEL : %s" args)
-  (deferred:trans-multi-args args 
-    'deferred:parallel 'deferred:parallel-list 'deferred:parallel-main))
-
 (defun deferred:trans-multi-args (args self-func list-func main-func)
   "[internal] Check the argument values and dispatch to methods."
   (cond
@@ -560,17 +550,6 @@ functions."
         (funcall main-func lst))
        (t (error "Wrong argument type. %s" args)))))
    (t (funcall self-func args))))
-
-(defun deferred:parallel-list (lst)
-  "[internal] Deferred list implementation for `deferred:parallel'. "
-  (deferred:message "PARALLEL<LIST>" )
-  (lexical-let*
-      ((pd (deferred:parallel-main (deferred:parallel-array-to-alist lst)))
-       (rd (deferred:nextc pd 'deferred:parallel-alist-to-array)))
-    (setf (deferred-cancel rd)
-          (lambda (x) (deferred:default-cancel x)
-            (deferred:cancel pd)))
-    rd))
 
 (defun deferred:parallel-array-to-alist (lst)
   "[internal] Translation array to alist."
@@ -627,27 +606,26 @@ functions."
                 nil))))
     nd))
 
-
-(defun deferred:earlier (&rest args)
-  "Return a deferred object that calls given deferred objects or
-functions in parallel and wait for the first callback. The
-following deferred task will be called with the first return
-value. ARGS can be a list or an alist of deferred objects or
-functions."
-  (deferred:message "EARLIER : %s" args)
-  (deferred:trans-multi-args args 
-    'deferred:earlier 'deferred:earlier-list 'deferred:earlier-main))
-
-(defun deferred:earlier-list (lst)
-  "[internal] Deferred list implementation for `deferred:earlier'. "
-  (deferred:message "EARLIER<LIST>" )
+(defun deferred:parallel-list (lst)
+  "[internal] Deferred list implementation for `deferred:parallel'. "
+  (deferred:message "PARALLEL<LIST>" )
   (lexical-let*
-      ((pd (deferred:earlier-main (deferred:parallel-array-to-alist lst)))
-       (rd (deferred:nextc pd (lambda (x) (cdr x)))))
+      ((pd (deferred:parallel-main (deferred:parallel-array-to-alist lst)))
+       (rd (deferred:nextc pd 'deferred:parallel-alist-to-array)))
     (setf (deferred-cancel rd)
           (lambda (x) (deferred:default-cancel x)
             (deferred:cancel pd)))
     rd))
+
+(defun deferred:parallel (&rest args)
+  "Return a deferred object that calls given deferred objects or
+functions in parallel and wait for all callbacks. The following
+deferred task will be called with an array of the return
+values. ARGS can be a list or an alist of deferred objects or
+functions."
+  (deferred:message "PARALLEL : %s" args)
+  (deferred:trans-multi-args args 
+    'deferred:parallel 'deferred:parallel-list 'deferred:parallel-main))
 
 (defun deferred:earlier-main (alst)
   "[internal] Deferred alist implementation for `deferred:earlier'. "
@@ -684,6 +662,27 @@ functions."
                 nil))))
     nd))
 
+(defun deferred:earlier-list (lst)
+  "[internal] Deferred list implementation for `deferred:earlier'. "
+  (deferred:message "EARLIER<LIST>" )
+  (lexical-let*
+      ((pd (deferred:earlier-main (deferred:parallel-array-to-alist lst)))
+       (rd (deferred:nextc pd (lambda (x) (cdr x)))))
+    (setf (deferred-cancel rd)
+          (lambda (x) (deferred:default-cancel x)
+            (deferred:cancel pd)))
+    rd))
+
+
+(defun deferred:earlier (&rest args)
+  "Return a deferred object that calls given deferred objects or
+functions in parallel and wait for the first callback. The
+following deferred task will be called with the first return
+value. ARGS can be a list or an alist of deferred objects or
+functions."
+  (deferred:message "EARLIER : %s" args)
+  (deferred:trans-multi-args args 
+    'deferred:earlier 'deferred:earlier-list 'deferred:earlier-main))
 
 
 
