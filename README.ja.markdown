@@ -322,7 +322,7 @@ Loop and animation:
 * deferred:call
   * 引数：関数のシンボル、引数（可変長）
   * 返値：deferredオブジェクト
-  * オリジナルのcallを非同期にした関数です
+  * オリジナルのfuncallを非同期にした関数です
 
 * deferred:apply
   * 引数：関数のシンボル、引数（リスト）
