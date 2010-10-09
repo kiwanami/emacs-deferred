@@ -91,7 +91,8 @@
         ($
          ,@form)
         (setq last-value x))
-       (sit-for ,time)
+       (while (null last-value)
+         (sit-for ,time))
        (flush)
        last-value)))
 
