@@ -662,10 +662,37 @@
         (buffer-string))
       (wtest 0.1 ;; maybe fail in some environments...
        (deferred:process "pwd" nil)))
-     
+
+     (expect 
+      (length (buffer-list))
+      (deferred:cancel (deferred:process "pwd" nil))
+      (length (buffer-list)))
+
      (expect "Searching for program: no such file or directory, pwd---"
              (dtest
               (deferred:process "pwd---")
+              (nextc it (deferred:not-called-func))
+              (errorc it e)))
+
+     (expect 
+      (with-temp-buffer 
+        (call-process "ls" nil t "-1")
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process-buffer "ls" "-1")
+       (nextc it
+              (unless (buffer-live-p x) 
+                (error "Not live buffer : %s" x))
+              (with-current-buffer x (buffer-string)))))
+
+     (expect 
+      (length (buffer-list))
+      (deferred:cancel (deferred:process-buffer "ls" nil))
+      (length (buffer-list)))
+
+     (expect "Searching for program: no such file or directory, pwd---"
+             (dtest
+              (deferred:process-buffer "pwd---")
               (nextc it (deferred:not-called-func))
               (errorc it e)))
 
