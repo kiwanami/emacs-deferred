@@ -281,6 +281,17 @@ Mainly this function is called by timer asynchronously."
       (setq value (deferred:worker)))
     value))
 
+(defun deferred:sync! (d)
+  "Wait for the given deferred task. For test and debugging."
+  (progn 
+    (lexical-let ((last-value 'deferred:undefined*))
+      (deferred:nextc d
+        (lambda (x) (setq last-value x)))
+      (while (eq 'deferred:undefined* last-value)
+        (sit-for 0.05)
+        (sleep-for 0.05))
+      last-value)))
+
 
 
 ;; Struct: deferred
