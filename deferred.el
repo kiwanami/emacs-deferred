@@ -96,8 +96,8 @@
 ;; * deferred:errorback(error)
 ;; Start errorback chain.
 ;; All errors occurred in deferred tasks are cought by errorback handlers.
-;; If you want to debug the error, set `debug-on-signal' to non-nil.
-;; (setq debug-on-signal t)
+;; If you want to debug the error, set `deferred:debug-on-signal' to non-nil.
+;; (setq deferred:debug-on-signal t)
 
 ;; * deferred:callback-post(value)
 ;; Start callback chain asynchronously.
@@ -191,6 +191,25 @@ The lambda function can define with zero and one argument."
   (interactive)
   (deferred:message "==================== mark ==== %s" 
     (format-time-string "%H:%M:%S" (current-time))))
+
+(defvar deferred:debug-on-signal nil
+"If non nil, the value `debug-on-signal' is substituted this
+value in the `condition-case' form in deferred
+implementations. Then, Emacs debugger can catch an error occurred
+in the asynchronous tasks.")
+
+(defmacro deferred:condition-case (var protected-form &rest handlers)
+  "[internal] Custom condition-case. See the comment for
+`deferred:debug-on-signal'." 
+  `(cond
+    ((null deferred:debug-on-signal)
+     (condition-case ,var ,protected-form ,@handlers))
+    (t
+     (let ((deferred:debug-on-signal-backup debug-on-signal))
+       (setq debug-on-signal deferred:debug-on-signal)
+       (unwind-protect
+           (condition-case ,var ,protected-form ,@handlers)
+         (setq debug-on-signal deferred:debug-on-signal-backup))))))
 
 
 
@@ -309,7 +328,7 @@ an argument value for execution of the deferred task."
     (cond
      (callback
       (let (value (next-deferred (deferred-next d)))
-        (condition-case err
+        (deferred:condition-case err
             (progn 
               (setq value
                     (deferred:call-lambda callback arg))
