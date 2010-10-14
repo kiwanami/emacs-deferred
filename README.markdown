@@ -19,7 +19,7 @@ Install by auto-install:
 
 ## Sample codes ##
 
-You can find following sample codes in 'sample-deferred.el'.
+You can find following sample codes in 'deferred-sample.el'.
 Executing 'eval-last-sexp' (C-x C-e), you can try those codes.
 
 ### Basic usage ###
@@ -474,8 +474,8 @@ Corrected:
 
 Following documents are good introduction to deferred.
 
-* [JSDeferred introduction](http://cho45.stfuawsc.com/jsdeferred/doc/intro.html "JSDeferred introduction")
-
+* [Introduction to JSDeferred](http://cho45.stfuawsc.com/jsdeferred/doc/intro.en.html "Introduction to JSDeferred")
+* [JSDeferred site](http://cho45.stfuawsc.com/jsdeferred/ "JSDeferred site")
 
 * * * * *
 
