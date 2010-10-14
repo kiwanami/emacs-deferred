@@ -430,11 +430,23 @@ Some discussions of writing deferred codes.
 
 ### Using lexical scope ###
 
-lexical-let (TODO)
+Using the lexical scope macro, such as 'lexical-let', the deferred tasks defined by lambdas can access local variables.
 
-### Current status ###
+lexical-let Ex.:
 
-save-execursion, with-current-buffer (TODO)
+    (lexical-let ((a (point)))
+      (deferred:$
+        (deferred:wait 1000)
+        (deferred:nextc it
+          (lambda (x) 
+            (goto-char a)
+            (insert "here!")))))
+
+If you write a code of deferred tasks without lexical scope macros, you should be careful with the scopes of each variables.
+
+### Excursion (Current status) ###
+
+The 'excursion' functions those hold the current status with the s-exp form, such as 'save-execursion' or 'with-current-buffer', are not valid in the deferred tasks, because of execution asynchronously.
 
 Wrong Ex.:
 
@@ -446,6 +458,7 @@ Wrong Ex.:
             (insert "Time: %s " x) ; 'insert' may not be in the *Message* buffer!
           )))) 
 
+In this case, using lexical scope macros to access the buffer variable, you can change the buffer in the deferred task.
 
 Corrected:
 
@@ -458,9 +471,11 @@ Corrected:
               (insert "Time: %s " x))))))
 
 
-### Aware of return values ###
+### Be aware of return values ###
 
-(TODO)
+However the dynamic connection is a powerful feature, sometimes it causes bugs of the wrong execution order, because of returning not intended deferred objects.
+
+Then, you should watch the return values of the deferred tasks not to cause an unexpected dynamic connection. 
 
 ### Debugging ###
 
@@ -468,7 +483,9 @@ Corrected:
 
 ### Using macros ###
 
-(TODO)
+Writing deferred tasks with 'deferred.el', you may write a lot of 'deferred:nextc' and 'lambda' to define tasks. Defining a macro, you may write codes shortly. The test code 'test-deferred.el' uses many macros to shorten test codes.
+
+On the other hand, using macros to hide 'lambda', it is difficult to realize when the deferred codes are evaluated. That is why 'deferred.el' does not provide lot of convenient macros. If you use macros, be careful evaluation timing of deferred forms.
 
 ### Introduction for deferred ###
 
