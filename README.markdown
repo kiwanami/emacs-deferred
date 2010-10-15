@@ -479,7 +479,13 @@ Then, you should watch the return values of the deferred tasks not to cause an u
 
 ### Debugging ###
 
-(TODO)
+The debugging of asynchronous tasks is difficult. Of course, you can use debugger for deferred tasks, but asynchronous tasks cause some troubles, such as interruptions of your debugging and timing gap of simultaneous deferred tasks. Therefore, logging is a safe debugging to observe the tasks correctly, for example, using the 'message' function and making custom application log buffer.
+
+If deferred tasks fall into an infinite loop unexpectedly (but Emacs may not freeze), calling the command 'deferred:clear-queue', you can stop the deferred tasks immediately.
+
+If the errors occurred in deferred tasks are caught by no errorback functions, finally the deferred framework catches it and reports to the message buffer. Because the implementation of the framework uses a 'condition-case' form, the debugger can not catch the signals normally. If you want to debug the errors in the deferred tasks with the debug-on-error mechanism, set the variable 'deferred:debug-on-signal' non-nil.
+
+Wrapping a deferred task in the function 'deferred:sync!', you can wait for the result of the task synchronously. However, the wrapper function should be used for test or debug purpose, because the synchronous waiting is not exact.
 
 ### Using macros ###
 
