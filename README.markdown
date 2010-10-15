@@ -247,68 +247,87 @@ Loop and animation:
 
 #### Basic functions ####
 
-* deferred:next
-  * Arguments : a function with zero or one argument
-  * Return : a deferred object
+* deferred:next (callback)
+  * Arguments
+    * callback: a function with zero or one argument
+  * Return
+    * a deferred object
   * Return a deferred object that wrap the given callback function. Then, put the deferred object into the execution queue to run asynchronously.
     * Namely, run the given function asynchronously.
  
 
-* deferred:nextc
-   * Arguments : a deferred object / a function with zero or one argument
-   * Return : a deferred object
+* deferred:nextc (d callback)
+   * Arguments
+     * d: a deferred object
+     * callback: a function with zero or one argument
+   * Return
+     * a deferred object
    * Return a deferred object that wrap the given callback function. Then, connect the created deferred object with the given deferred object.
      * Namely, add the given function to the previous deferred object.
 
-* deferred:error
-  * Arguments : a deferred object / a function with zero or one argument
-  * Return : a deferred object
+* deferred:error (d errorback)
+  * Arguments 
+    * d: a deferred object
+    * errorback: a function with zero or one argument
+  * Return
+    * a deferred object
   * Return a deferred object that wrap the given function as errorback. Then, connect the created deferred object with the given deferred object.
     * Namely, the given function catches the error occurred in the previous task.
   * If this function does not throw an error, the subsequent callback functions are executed.
 
-* deferred:cancel
-  * Arguments : a deferred object
-  * Return : the given deferred object (invalidated)
+* deferred:cancel (d)
+  * Arguments
+    * d: a deferred object
+  * Return
+    * the given deferred object (invalidated)
   * Invalidate the given deferred object.
   * Because this function modifies the deferred object, it can not be used in future.
 
-* deferred:wait
-  * Arguments : a number (millisecond)
-  * Return : a deferred object
+* deferred:wait (msec)
+  * Arguments
+    * msec: a number (millisecond)
+  * Return
+    * a deferred object
   * Return a deferred object that will be called after the specified millisecond.
   * The subsequent deferred task receives the actual elapse time in millisecond.
 
 * deferred:$
-  * Arguments : more than one deferred forms
-  * Return : the last deferred object
+  * Arguments / more than one deferred forms
+  * Return / the last deferred object
   * An anaphoric macro chains deferred objects.
     * The anaphoric variable 'it' holds a deferred object in the previous line.
 
 #### Utility functions ####
 
-* deferred:loop
-  * Arguments : an integer or a list / a function with zero or one argument
-  * Return : a deferred object
+* deferred:loop (number-or-list callback)
+  * Arguments
+    * number-or-list: an integer or a list
+    * callback: a function with zero or one argument
+  * Return
+    * a deferred object
   * Return a deferred object that iterates the function for the specified times.
     * The function receives the count number that begins zero.
   * If a list is given, not a number, the function visits each elements in the list like 'mapc'.
 
-* deferred:parallel
-  * Arguments : 
-    * more than one deferred objects or a list of functions
-    * an alist consist of cons cells with a symbol and a deferred object or a function
-  * Return : a deferred object
+* deferred:parallel (list-or-alist)
+  * Arguments 
+    * list-or-alist:
+      * more than one deferred objects or a list of functions
+      * an alist consist of cons cells with a symbol and a deferred object or a function
+  * Return
+    * a deferred object
   * Return a deferred object that executes given functions in parallel and wait for all callback values.
   * The subsequent deferred task receives a list of the results. The order of the results is corresponding to one of the argument.
   * Giving an alist of tasks as the argument, the results alist is returned.
   * If the parallel task throws an error, the error object is passed as a result.
 
-* deferred:earlier
-  * Arguments : 
-    * more than one deferred objects or a list of functions
-    * an alist consist of cons cells with a symbol and a deferred object or a function
-  * Return : a deferred object
+* deferred:earlier (list-or-alist)
+  * Arguments
+    * list-or-alist:
+      * more than one deferred objects or a list of functions
+      * an alist consist of cons cells with a symbol and a deferred object or a function
+  * Return
+    * a deferred object
   * Return a deferred object that executes given functions in parallel and wait for the first callback value.
     * The other tasks are canceled.
   * Giving an alist of tasks as the argument, a cons cell is returned as a result.
@@ -317,76 +336,112 @@ Loop and animation:
 
 #### Wrapper functions ####
 
-* deferred:call
-  * Arguments : a function / arguments (variable length)
-  * Return : a deferred object
+* deferred:call (function args...)
+  * Arguments
+    * function: a function
+    * args: arguments (variable length)
+  * Return
+    * a deferred object
   * a wrapper of the function 'funcall'
 
-* deferred:apply
-  * Arguments : a function / a list of arguments
-  * Return : a deferred object
+* deferred:apply (function args)
+  * Arguments
+    * function: a function
+    * args: a list of arguments
+  * Return
+    * a deferred object
   * a wrapper of the function 'apply'
 
-* deferred:process
-  * Arguments : string: command / strings: command arguments (variable length)
-  * Return : a deferred object
+* deferred:process (command args...)
+  * Arguments
+    * command: command to execute
+    * args: command arguments (variable length)
+  * Return
+    * a deferred object
   * Execute a command asynchronously.
   * The subsequent deferred task receives the stdout from the command as a string.
 
-* deferred:url-retrieve
-  * Arguments : string: URL / cbargs (optional)
-  * Return : a deferred object
+* deferred:url-retrieve (url [cbargs])
+  * Arguments
+    * url: URL to get
+    * cbargs: callback argument (optional)
+  * Return
+    * a deferred object
   * A wrapper function of 'url-retrieve' in the 'url' package.
   * The subsequent deferred task receives the content as a buffer.
     * The following tasks are responsible to kill the buffer.
 
-* deferred:url-get (experimental)
-  * Arguments : string: URL / alist of parameters
-  * Return : a deferred object
+* [experimental] deferred:url-get (url [params])
+  * Arguments
+    * url: URL to get
+    * params: alist of parameters
+  * Return 
+    * a deferred object
 
-* deferred:url-post (experimental)
-  * Arguments : string: URL / alist of parameters
-  * Return : a deferred object
+* [experimental] deferred:url-post (url [params])
+  * Arguments
+    * url: URL to get
+    * params: alist of parameters
+  * Return 
+    * a deferred object
 
 #### Primitive functions ####
 
-* deferred:new
-  * Arguments : a function with zero or one argument
-  * Return : a deferred object
+* deferred:new ([callback])
+  * Arguments
+    * callback: a function with zero or one argument (optional)
+  * Return
+    * a deferred object
   * Create a deferred object
   * The created deferred object is never called until someone call the function 'deferred:callback' or 'deferred:errorback'.
   * Using this object, a deferred chain can pause to wait for other events. (See the source for 'deferred:wait'.)
 
-* deferred:succeed
-  * Arguments : a value (optional)
-  * Return : a deferred object
+* deferred:succeed ([value])
+  * Arguments 
+    * value: a value (optional)
+  * Return
+    * a deferred object
   * Create a deferred object that has been called the callback function.
   * When a deferred task is connected, the subsequent task will be executed immediately (synchronously).
 
-* deferred:fail
-  * Arguments : an error value (optional)
-  * Return : a deferred object
+* deferred:fail ([error])
+  * Arguments 
+    * error: an error value (optional)
+  * Return 
+    * a deferred object
   * Create a deferred object that has been called the errorback function.
   * When a deferred task is connected, the subsequent task will be executed immediately (synchronously).
 
-* deferred:callback
-  * Arguments : a deferred object / a value (optional)
-  * Return : a deferred object or a result value
+* deferred:callback (d [value])
+  * Arguments 
+    * d: a deferred object
+    * value: a value (optional)
+  * Return 
+    * a deferred object or a result value
   * Start executing the deferred tasks. The first task is executed synchronously.
 
-* deferred:callback-post
-  * Arguments : a deferred object / a value (optional)
-  * Return : a deferred object or a result value
+* deferred:callback-post (d [value])
+  * Arguments 
+    * d: a deferred object
+    * value: a value (optional)
+  * Return 
+    * a deferred object or a result value
   * Start executing the deferred tasks. The first task is executed asynchronously.
 
-* deferred:errorback
-  * Arguments : a deferred object / a value (optional)
-  * Return : a deferred object or a result value
+* deferred:errorback (d [error])
+  * Arguments
+    * d: a deferred object 
+    * error: an error value (optional)
+  * Return 
+    * a deferred object or a result value
   * Start executing the deferred tasks from errorback. The first task is executed synchronously.
 
-* deferred:errorback-post
-  * Arguments : a deferred object / a value (optional)
-  * Return : a deferred object or a result value
+* deferred:errorback-post (d [error])
+  * Arguments
+    * d: a deferred object 
+    * error: an error value (optional)
+  * Return 
+    * a deferred object or a result value
   * Start executing the deferred tasks from errorback. The first task is executed asynchronously.
 
 
