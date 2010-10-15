@@ -361,6 +361,16 @@ Loop and animation:
   * Execute a command asynchronously.
   * The subsequent deferred task receives the stdout from the command as a string.
 
+* deferred:process-buffer (command args...)
+  * Arguments
+    * command: command to execute
+    * args: command arguments (variable length)
+  * Return
+    * a deferred object
+  * Execute a command asynchronously.
+  * The subsequent deferred task receives the stdout from the command as a buffer.
+    * The following tasks are responsible to kill the buffer.
+
 * deferred:url-retrieve (url [cbargs])
   * Arguments
     * url: URL to get

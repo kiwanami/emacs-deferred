@@ -246,40 +246,47 @@ Loop and animation:
 
 良く使用する基本的な関数やマクロです。
 
-* deferred:next
-  * 引数：引数1つか0個の関数
+* deferred:next (callback)
+  * 引数：
+    * callback: 引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。また実行キューに入れて非同期実行をスケジュールします。
     * →関数を非同期で実行します。
  
 
-* deferred:nextc
-   * 引数：deferredオブジェクト、引数1つか0個の関数
+* deferred:nextc (d callback)
+   * 引数：
+     * d: deferredオブジェクト
+     * callback: 引数1つか0個の関数
    * 返値：deferredオブジェクト
    * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
      * →前のdeferredの後に関数を実行するように連結します。
 
-* deferred:error
-  * 引数：deferredオブジェクト、引数1つか0個の関数
+* deferred:error (d errorback)
+  * 引数：
+    * d: deferredオブジェクト
+    * errorback: 引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の関数をエラー処理コールバックとしてラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
     * →前のdeferredでエラーが起きたときに、この関数で処理するようにします。
   * この関数内で例外を発生しなければ、後続のdeferredのコールバック関数が実行されます。
 
-* deferred:cancel
-  * 引数：deferredオブジェクト
+* deferred:cancel (d)
+  * 引数：
+    * d: deferredオブジェクト
   * 返値：引数のdeferredオブジェクト（無効になっている）
   * 引数のdeferredオブジェクトを無効にして、コールバックやエラーバック関数が実行されないようにします。
   * この関数は引数のdeferredオブジェクトを破壊的に変更します。
 
-* deferred:wait
-  * 引数：数値
+* deferred:wait (msec)
+  * 引数：
+    * msec: 数値
   * 返値：deferredオブジェクト
   * この関数が実行された時点から引数で指定されたミリ秒待って、後続のdeferredオブジェクトを実行します。
   * 後続のdeferredオブジェクトのコールバック関数の引数には、実際に経過した時間がミリ秒で渡ってきます。
 
-* deferred:$
-  * 引数：1つ以上のdeferredオブジェクト
+* deferred:$ (forms...)
+  * 引数：1つ以上のdeferredフォーム
   * 返値：一番最後のdeferredオブジェクト
   * deferredオブジェクトのチェインを書きやすくするためのアナフォリックマクロです。
   * 一つ前のdeferredオブジェクトが「it」で渡ってきます。
@@ -288,13 +295,15 @@ Loop and animation:
 
 複数のdeferredを扱う関数です。
 
-* deferred:loop
-  * 引数：1以上の整数もしくはリスト、引数1つか0個の関数
+* deferred:loop (number-or-list callback)
+  * 引数：
+    * number-or-list: 1以上の整数もしくはリスト
+    * callback: 引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の数値で指定された数だけループするようなdeferredオブジェクトを生成して返します。関数には0から始まるカウンタが渡ってきます。
   * 整数ではなくリストが渡ってきた場合は、mapcのようにループします。
 
-* deferred:parallel
+* deferred:parallel (list-or-alist)
   * 引数：以下のどちらか
     * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
     * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
@@ -304,7 +313,7 @@ Loop and animation:
   * 引数にalistが渡した場合は、結果もalistで渡ります。この場合は順番は保持されません。
   * deferred処理の中でエラーが発生した場合は、結果のリストの中にエラーオブジェクトが入ります。
 
-* deferred:earlier
+* deferred:earlier (list-or-alist)
   * 引数：以下のどちらか
     * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
     * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
@@ -319,36 +328,57 @@ Loop and animation:
 
 元からある処理をdeferredでラップする関数です。
 
-* deferred:call
-  * 引数：関数のシンボル、引数（可変長）
+* deferred:call (function args...)
+  * 引数：
+    * function: 関数のシンボル
+    * args: 引数（可変長）
   * 返値：deferredオブジェクト
   * オリジナルのfuncallを非同期にした関数です
 
-* deferred:apply
-  * 引数：関数のシンボル、引数（リスト）
+* deferred:apply (function args)
+  * 引数：
+    * function: 関数のシンボル
+    * args: 引数（リスト）
   * 返値：deferredオブジェクト
   * オリジナルのapplyを非同期にした関数です
 
-* deferred:process
-  * 引数：文字列（外部実行コマンド）、文字列（可変長、コマンドの引数）
+* deferred:process (command args...)
+  * 引数：
+    * command: 外部実行コマンド
+    * args: コマンドの引数(可変長)
   * 返値：deferredオブジェクト
   * 外部コマンドを非同期で実行します。
   * 外部コマンドのstdoutの結果が文字列として後続のdeferredに渡ります。
 
-* deferred:url-retrieve
-  * 引数：文字列（URL）、オリジナルのコールバック引数（省略可）
+* deferred:process-buffer (command args...)
+  * 引数：
+    * command: 外部実行コマンド
+    * args: コマンドの引数(可変長)
+  * 返値：deferredオブジェクト
+  * 外部コマンドを非同期で実行します。
+  * 外部コマンドのstdoutの結果がバッファとして後続のdeferredに渡ります。
+    * バッファの処分は後続のdeferredに任されます。
+
+* deferred:url-retrieve (url [cbargs])
+  * 引数：
+    * url: 取ってきたいURL
+    * cbargs: コールバック引数（オリジナル関数のもの。省略可。）
   * 返値：deferredオブジェクト
   * urlパッケージにある、オリジナルのurl-retrieveをdeferredでラップした関数です。
   * HTTPで取得した結果が、後続のdeferredにバッファで渡ります。
     * バッファの処分は後続のdeferredに任されます。
 
-* deferred:url-get（仮）
-  * 引数：文字列（URL）、パラメーターのalist
+* （仮）deferred:url-get (url params)
+  * 引数：
+    * url: 取ってきたいURL
+    * params: パラメーターのalist
   * 返値：deferredオブジェクト
   * パラメーターを指定しやすくした関数です。仮実装ですので今後仕様が変わる可能性があります。
 
-* deferred:url-post（仮）
-  * 引数：文字列（URL）、パラメーターのalist
+* （仮）deferred:url-post (url params)
+  * 引数：
+    * url: 取ってきたいURL
+    * params: パラメーターのalist
   * 返値：deferredオブジェクト
   * パラメーターを指定しやすくして、POSTでアクセスする関数です。仮実装ですので今後仕様が変わる可能性があります。
 
@@ -356,43 +386,51 @@ Loop and animation:
 
 プリミティブな操作を行う関数です。典型的でないdeferred処理を行いたい場合に、組み合わせて使います。
 
-* deferred:new
+* deferred:new (callback)
   * 引数：引数1つか0個の関数
   * 返値：deferredオブジェクト
   * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。
   * 実行キューに入れないため、deferred:callbackやdeferred:errorbackが呼ばれない限り実行されません。
   * 一時停止して他のイベントを待つような、deferredチェインを作りたいときに使います。 → deferred:wait のソースなどを参考。
 
-* deferred:succeed
+* deferred:succeed ([value])
   * 引数：値（省略可）
   * 返値：deferredオブジェクト
   * 引数の値を使って、既にコールバックが呼ばれた状態のdeferredを返します。
   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
-* deferred:fail
+* deferred:fail ([error])
   * 引数：値（省略可）
   * 返値：deferredオブジェクト
   * 引数の値を使って、既にエラーバックが呼ばれた状態のdeferredを返します。
   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
-* deferred:callback
-  * 引数：deferredオブジェクト、値（省略可）
+* deferred:callback (d [value])
+  * 引数：
+    * d: deferredオブジェクト
+    * value: 値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトを同期的に開始します。
   * ただし、同期的な実行は初回のみで、引数のdeferred以降のdeferredオブジェクトは非同期に実行されます。
 
-* deferred:callback-post
-  * 引数：deferredオブジェクト、値（省略可）
+* deferred:callback-post (d [value])
+  * 引数：
+    * d: deferredオブジェクト
+    * value: 値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトを非同期に開始します。
 
-* deferred:errorback
-  * 引数：deferredオブジェクト、値（省略可）
+* deferred:errorback (d [error])
+  * 引数：
+    * d: deferredオブジェクト
+    * error: 値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトからエラーバックを同期的に開始します。
 
-* deferred:errorback-post
-  * 引数：deferredオブジェクト、値（省略可）
+* deferred:errorback-post (d [error])
+  * 引数：
+    * d: deferredオブジェクト
+    * error: 値（省略可）
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトからエラーバックを非同期に開始します。
 
@@ -441,6 +479,16 @@ deferred処理の中でdeferredオブジェクトを返すと、静的に接続�
 deferredの処理に値を持って行く場合、lexical-let などを用いてレキシカルスコープを使うと大変便利です。
 
 特に、一連のdeferred処理の中で共通に使う値にレキシカルスコープを使うと、ローカル変数のようにアクセスすること出来るため、非同期処理のために値をグローバルに保持しておく必要が無くなります。
+
+lexical-let 例:
+
+    (lexical-let ((a (point)))
+      (deferred:$
+        (deferred:wait 1000)
+        (deferred:nextc it
+          (lambda (x) 
+            (goto-char a)
+            (insert "here!")))))
 
 逆に、lexical-letでレキシカルスコープにバインドしていないシンボルを参照しようとして、エラーになることがよくあります。
 
