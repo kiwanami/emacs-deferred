@@ -760,7 +760,7 @@ process."
 
 (eval-after-load "url"
   ;; for url package
-  ;; TODO: cookie, proxy, content
+  ;; TODO: proxy, charaset
   '(progn
 
      (defun deferred:url-retrieve (url &optional cbargs)
@@ -781,6 +781,14 @@ into. Currently dynamic binding variables are not supported."
                    (kill-buffer buf))))
          nd))
 
+     (defun deferred:url-delete-header (buf)
+       (with-current-buffer buf
+         (goto-char (point-min))
+         (let ((pos (re-search-forward "\n\n")))
+           (when pos
+             (delete-region (point-min) (+ 2 pos)))))
+       buf)
+
      (defun deferred:url-get (url &optional params)
        "Perform a HTTP GET method with `url-retrieve'. PARAMS is
 a parameter list of (key . value) or key. The next deferred
@@ -788,7 +796,9 @@ object receives the buffer object that URL will load into."
        (when params
          (setq url
                (concat url "?" (deferred:url-param-serialize params))))
-       (deferred:url-retrieve url))
+       (deferred:$
+         (deferred:url-retrieve url)
+         (deferred:nextc it 'deferred:url-delete-header)))
 
      (defun deferred:url-post (url &optional params)
        "Perform a HTTP POST method with `url-retrieve'. PARAMS is
@@ -813,7 +823,8 @@ object receives the buffer object that URL will load into."
                (lambda (x) 
                  (when (buffer-live-p buf)
                    (kill-buffer buf))))
-         nd))
+         (deferred:$ nd
+           (deferred:nextc it 'deferred:url-delete-header))))
 
      (defun deferred:url-escape (val)
        "[internal] Return a new string that is VAL URI-encoded."
@@ -825,17 +836,18 @@ object receives the buffer object that URL will load into."
      (defun deferred:url-param-serialize (params)
        "[internal] Serialize a list of (key . value) cons cells
 into a query string."
-       (mapconcat
-        (loop for p in params
-              collect
-              (cond
-               ((consp p)
-                (concat 
-                 (deferred:url-escape (car p)) "="
-                 (deferred:url-escape (cdr p))))
-               (t
-                (deferred:url-escape p))))
-        "&"))
+       (when params
+         (mapconcat
+          (loop for p in params
+                collect
+                (cond
+                 ((consp p)
+                  (concat 
+                   (deferred:url-escape (car p)) "="
+                   (deferred:url-escape (cdr p))))
+                 (t
+                  (deferred:url-escape p))))
+          "&")))
      ))
 
 
