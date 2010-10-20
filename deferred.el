@@ -218,7 +218,7 @@ in the asynchronous tasks.")
 
 (defvar deferred:queue nil
   "[internal] The execution queue of deferred objects. 
-See the functions `deferred:post' and `deferred:worker'.")
+See the functions `deferred:post-task' and `deferred:worker'.")
 
 (defmacro deferred:pack (a b c)
   `(cons ,a (cons ,b ,c)))
@@ -397,7 +397,7 @@ an argument value for execution of the deferred task."
 
 (defun deferred:errorback (d &optional arg)
   "Start deferred chain with an errorback message."
-  (deferred:exec-task d 'ok arg))
+  (deferred:exec-task d 'ng arg))
 
 (defun deferred:callback-post (d &optional arg)
   "Add the deferred object to the execution queue."
@@ -405,7 +405,7 @@ an argument value for execution of the deferred task."
 
 (defun deferred:errorback-post (d &optional arg)
   "Add the deferred object to the execution queue."
-  (deferred:post-task d 'ok arg))
+  (deferred:post-task d 'ng arg))
 
 (defun deferred:cancel (d)
   "Cancel all callbacks and deferred chain in the deferred object."
