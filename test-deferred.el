@@ -1,7 +1,7 @@
 ;;; test code for deferred.el
 
 ;; Copyright (C) 2010  SAKURAI Masashi
-;; Author: SAKURAI Masashi <m.sakurai@kiwanami.net>
+;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -269,6 +269,25 @@
               (nextc it (error "second errorback called"))
               (nextc it "skipped")
               (errorc it e)))
+
+     (expect "start errorback ok1"
+             ;; start errorback test1
+             (flet ((message (&rest args) args))
+               (let ((d (dnew)))
+                 (dtest 
+                  (progn (deferred:errorback d "start errorback") d)
+                  (nextc it (deferred:not-called-func "ERROR : start errorback"))
+                  (errorc it e)
+                  (nextc it (concat x " ok1"))))))
+
+     (expect "post errorback ok2"
+             ;; start errorback test1
+             (let ((d (dnew)))
+               (dtest
+                (progn (deferred:errorback-post d "post errorback") d)
+                (nextc it (deferred:not-called-func "ERROR : post errorback"))
+                (errorc it e)
+                (nextc it (concat x " ok2")))))
 
      (expect "Child deferred chain"
              ;; child deferred chain test
