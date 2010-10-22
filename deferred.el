@@ -360,8 +360,12 @@ an argument value for execution of the deferred task."
             (deferred:onerror
               (deferred:call-lambda deferred:onerror err))
             (t
-             (error (deferred:esc-msg (error-message-string err)))))))))
-     ((null callback)
+             (deferred:message "ERROR : %s" err)
+             (message "deferred error : %s" err)
+             (setf (deferred-status d) 'ng)
+             (setf (deferred-value d) (error-message-string err))
+             (deferred:esc-msg (error-message-string err))))))))
+     (t ; <= (null callback)
       (let ((next-deferred (deferred-next d)))
         (cond
          (next-deferred
