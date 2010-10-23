@@ -848,6 +848,7 @@ object receives the buffer object that URL will load into."
 into a query string."
        (when params
          (mapconcat
+          'identity
           (loop for p in params
                 collect
                 (cond
