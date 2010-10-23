@@ -220,7 +220,7 @@ in the asynchronous tasks.")
   "Waiting time between asynchronous tasks (second).
 The shorter waiting time increases the load of Emacs. The end
 user can tune this paramter. However, applications should not
-modify it because the applications run on various environments."
+modify it because the applications run on various environments.")
 
 (defvar deferred:queue nil
   "[internal] The execution queue of deferred objects. 
