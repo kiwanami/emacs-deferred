@@ -216,6 +216,12 @@ in the asynchronous tasks.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Back end functions of deferred tasks
 
+(defvar deferred:tick-time 0.001
+  "Waiting time between asynchronous tasks (second).
+The shorter waiting time increases the load of Emacs. The end
+user can tune this paramter. However, applications should not
+modify it because the applications run on various environments."
+
 (defvar deferred:queue nil
   "[internal] The execution queue of deferred objects. 
 See the functions `deferred:post-task' and `deferred:worker'.")
@@ -233,7 +239,7 @@ so that the deferred task will not be called twice."
 
 (defun deferred:schedule-worker ()
   "[internal] Schedule consuming a deferred task in the execution queue."
-  (run-at-time 0.001 nil 'deferred:worker))
+  (run-at-time deferred:tick-time nil 'deferred:worker))
 
 (defun deferred:post-task (d which &optional arg)
   "[internal] Add a deferred object to the execution queue
