@@ -19,7 +19,7 @@ deferred.elをload-pathに置いてください。
 
 ## 使い方例 ##
 
-以下のサンプルで例示したソースは sample-deferred.el の中にあります。
+以下のサンプルで例示したソースは deferred-samples.el の中にあります。
 eval-last-sexp (C-x C-e) などで実行してみてください。
 
 ### 基本 ###
