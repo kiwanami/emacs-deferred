@@ -354,6 +354,41 @@
               (cancelc it)
               (nextc it (deferred:not-called-func "wait cancel"))))
 
+     (expect "sync connect1"
+             ;; real time connection1
+             (dtest
+              (deferred:succeed "sync ")
+              (nextc it 
+                     (concat x "connect1"))))
+
+     (expect "sync connect11"
+             ;; real time connection11
+             (dtest
+              (deferred:succeed "sync ")
+              (nextc it 
+                     (concat x "connect1"))
+              (nextc it 
+                     (concat x "1"))))
+
+     (expect "connect2"
+             ;; real time connection1
+             (dtest
+              (deferred:succeed "sync ")
+              (nextc it
+                     (next "connect"))
+              (nextc it 
+                     (concat x "2"))))
+
+     (expect "connect!! GO"
+             ;; real time connection2
+             (dtest
+              (deferred:succeed "sync ")
+              (nextc it
+                     ($
+                      (next "connect")
+                      (nextc it (concat x "!!"))))
+              (nextc it 
+                     (concat x " GO"))))
 
 
      (desc ">>> Utility Functions Tests")

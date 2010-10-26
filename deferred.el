@@ -134,11 +134,13 @@
 
 (defmacro deferred:aand (test &rest rest)
   "[internal] Anaphoric AND."
+  (declare (debug ("test" form &rest form)))
   `(let ((it ,test))
-     (if it ,(if rest (macroexpand-all `(deferred:aand ,@rest)) 'it))))
+     (if it ,(if rest `(deferred:aand ,@rest) 'it))))
 
 (defmacro deferred:$ (&rest elements)
   "Anaphoric function chain macro for deferred chains."
+  (declare (debug (&rest form)))
   `(let (it)
      ,@(loop for i in elements
              with it = nil
@@ -148,6 +150,7 @@
 
 (defmacro deferred:lambda (args &rest body)
   "Anaphoric lambda macro for self recursion."
+  (declare (debug ("args" form &rest form)))
   (let ((argsyms (loop for i in args collect (gensym))))
   `(lambda (,@argsyms)
      (lexical-let (self)
@@ -200,7 +203,8 @@ in the asynchronous tasks.")
 
 (defmacro deferred:condition-case (var protected-form &rest handlers)
   "[internal] Custom condition-case. See the comment for
-`deferred:debug-on-signal'." 
+`deferred:debug-on-signal'."
+  (declare (debug (symbolp form &rest form)))
   `(cond
     ((null deferred:debug-on-signal)
      (condition-case ,var ,protected-form ,@handlers))
@@ -352,7 +356,9 @@ an argument value for execution of the deferred task."
               (cond
                ((deferred-p value)
                 (deferred:message "WAIT NEST : %s" value)
-                (deferred:set-next value next-deferred))
+                (if next-deferred
+                    (deferred:set-next value next-deferred)
+                  value))
                (t
                 (if next-deferred
                     (deferred:post-task next-deferred 'ok value)
@@ -385,10 +391,17 @@ an argument value for execution of the deferred task."
   (cond
    ((eq 'ok (deferred-status prev))
     (setf (deferred-status prev) nil)
-    (deferred:exec-task next 'ok (deferred-value prev)))
+    (let ((ret (deferred:exec-task 
+                 next 'ok (deferred-value prev))))
+      (if (deferred-p ret) ret
+        next)))
    ((eq 'ng (deferred-status prev))
     (setf (deferred-status prev) nil)
-    (deferred:exec-task next 'ng (deferred-value prev)))))
+    (let ((ret (deferred:exec-task next 'ng (deferred-value prev))))
+      (if (deferred-p ret) ret
+        next)))
+   (t
+    next)))
 
 
 
@@ -462,14 +475,12 @@ is a short cut of following code:
 (defun deferred:nextc (d callback)
   "Create a deferred object with OK callback and connect it to the given deferred object."
   (let ((nd (make-deferred :callback callback)))
-    (deferred:set-next d nd)
-    nd))
+    (deferred:set-next d nd)))
 
 (defun deferred:error (d callback)
   "Create a deferred object with errorback and connect it to the given deferred object."
   (let ((nd (make-deferred :errorback callback)))
-    (deferred:set-next d nd)
-    nd))
+    (deferred:set-next d nd)))
 
 (defun deferred:wait (msec)
   "Return a deferred object scheduled at MSEC millisecond later."
