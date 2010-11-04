@@ -807,8 +807,13 @@ into. Currently dynamic binding variables are not supported."
          (goto-char (point-min))
          (let ((pos (re-search-forward "\n\n")))
            (when pos
-             (delete-region (point-min) (+ 2 pos)))))
+             (delete-region (point-min) pos))))
        buf)
+
+     (defun deferred:url-delete-buffer (buf)
+       (when (and buf (buffer-live-p buf))
+         (kill-buffer buf))
+       nil)
 
      (defun deferred:url-get (url &optional params)
        "Perform a HTTP GET method with `url-retrieve'. PARAMS is
@@ -817,9 +822,12 @@ object receives the buffer object that URL will load into."
        (when params
          (setq url
                (concat url "?" (deferred:url-param-serialize params))))
-       (deferred:$
-         (deferred:url-retrieve url)
-         (deferred:nextc it 'deferred:url-delete-header)))
+       (let ((d (deferred:$
+                  (deferred:url-retrieve url)
+                  (deferred:nextc it 'deferred:url-delete-header))))
+         (deferred:set-next
+           d (deferred:new 'deferred:url-delete-buffer))
+         d))
 
      (defun deferred:url-post (url &optional params)
        "Perform a HTTP POST method with `url-retrieve'. PARAMS is
@@ -844,8 +852,10 @@ object receives the buffer object that URL will load into."
                (lambda (x) 
                  (when (buffer-live-p buf)
                    (kill-buffer buf))))
-         (deferred:$ nd
-           (deferred:nextc it 'deferred:url-delete-header))))
+         (let ((d (deferred:nextc nd 'deferred:url-delete-header)))
+           (deferred:set-next
+             d (deferred:new 'deferred:url-delete-buffer))
+           d)))
 
      (defun deferred:url-escape (val)
        "[internal] Return a new string that is VAL URI-encoded."
