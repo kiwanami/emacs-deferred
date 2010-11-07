@@ -693,6 +693,15 @@ functions."
   (deferred:trans-multi-args args 
     'deferred:earlier 'deferred:earlier-list 'deferred:earlier-main))
 
+(defmacro deferred:timeout (timeout-msec timeout-form d)
+  "Time out macro on a deferred task D.  If the deferred task D
+does not complete within TIMEOUT-MSEC, this macro cancels the
+deferred task and return the TIMEOUT-FORM."
+  `(deferred:earlier
+     (deferred:nextc (deferred:wait ,timeout-msec)
+       (lambda (x) ,timeout-form))
+     ,d))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

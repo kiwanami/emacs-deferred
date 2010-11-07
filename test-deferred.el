@@ -585,6 +585,18 @@
                 (nextc it (apply 'concat x))
                 (nextc it (concat x "ok")))))
 
+     (expect "arrived (1) ok"
+             ;; arrived one deferred
+             (dtest
+              (parallel (deferred:succeed 1))
+              (nextc it (format "arrived %s ok" x))))
+
+     (expect "arrived (1 2) ok"
+             ;; arrived deferreds
+             (dtest
+              (parallel (deferred:succeed 1) (deferred:succeed 2))
+              (nextc it (format "arrived %s ok" x))))
+
      (desc "> earlier")
      (expect nil
              ;; nil test
@@ -700,7 +712,19 @@
                (list (next (deferred:not-called-func "earlier 1"))
                      (next (deferred:not-called-func "earlier 2"))))
               (cancelc it)))
-     
+
+     (expect "arrived 1 ok"
+             ;; arrived one deferred
+             (dtest
+              (earlier (deferred:succeed 1))
+              (nextc it (format "arrived %s ok" x))))
+
+     (expect "arrived 1 ok"
+             ;; arrived deferreds
+             (dtest
+              (earlier (deferred:succeed 1) (deferred:succeed 2))
+              (nextc it (format "arrived %s ok" x))))
+
      (desc ">>>Application")
 
      (expect 
