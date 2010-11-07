@@ -233,14 +233,6 @@ See the functions `deferred:post-task' and `deferred:worker'.")
 (defmacro deferred:pack (a b c)
   `(cons ,a (cons ,b ,c)))
 
-(defun deferred:remove-from-queue (d)
-  "[internal] Remove the deferred object from the execution queue
-so that the deferred task will not be called twice."
-  (setq deferred:queue 
-        (loop for pack in deferred:queue
-              unless (eq d (car pack))
-              collect pack)))
-
 (defun deferred:schedule-worker ()
   "[internal] Schedule consuming a deferred task in the execution queue."
   (run-at-time deferred:tick-time nil 'deferred:worker))
@@ -250,7 +242,6 @@ so that the deferred task will not be called twice."
 `deferred:queue' and schedule to execute.
 D is a deferred object. WHICH is a symbol, `ok' or `ng'. ARG is
 an argument value for execution of the deferred task."
-  (deferred:remove-from-queue d)
   (push (deferred:pack d which arg) deferred:queue)
   (deferred:message "QUEUE-POST [%s]: %s" 
     (length deferred:queue) (deferred:pack d which arg))
