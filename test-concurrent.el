@@ -228,6 +228,38 @@
 
 ;; (deferred:debug (cc:test-dataflow-simple3) "Dataflow3 : %s" x)
 
+(defun cc:test-dataflow-simple4 ()
+  (lexical-let* 
+      ((result nil)
+       (dfinish (deferred:new
+                  (lambda (x) 
+                    (or (equal '(">> 3") result)
+                        result))))
+       (dfenv (cc:dataflow-environment)))
+
+    (deferred:$
+      (deferred:parallel
+        (cc:dataflow-get dfenv "abc")
+        (cc:dataflow-get dfenv "abc")
+        (cc:dataflow-get dfenv "abc"))
+      (deferred:nextc it
+        (lambda (values)
+          (apply '+ values)))
+      (deferred:nextc it
+        (lambda (x) (push (format ">> %s" x) result)))
+      (deferred:nextc it
+        (lambda (x) 
+          (deferred:callback dfinish))))
+
+    (deferred:nextc (deferred:wait 0.2)
+      (lambda (x) 
+        (cc:dataflow-set dfenv "abc" 1)
+        ))
+
+    dfinish))
+
+;; (deferred:debug (cc:test-dataflow-simple4) "Dataflow4 : %s" x)
+
 (defun cc:test-dataflow-signal ()
   (lexical-let* 
       ((result '(1))
@@ -493,6 +525,7 @@
                        cc:test-dataflow-simple1
                        cc:test-dataflow-simple2
                        cc:test-dataflow-simple3
+                       cc:test-dataflow-simple4
                        cc:test-dataflow-signal
                        cc:test-dataflow-parent1
                        cc:test-dataflow-parent2

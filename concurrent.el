@@ -349,11 +349,11 @@
       (cc:dataflow-signal df 'get key)
       (deferred:succeed (cc:dataflow-value obj)))
      (t
+      (setq obj (cc:dataflow-get-object-for-deferreds df key))
       (unless obj
         (setq obj (make-cc:dataflow :key key))
         (push obj (cc:dataflow-list df))
-        (cc:dataflow-signal df 'get-first key)
-        )
+        (cc:dataflow-signal df 'get-first key))
       (let ((d (deferred:new)))
         (push d (cc:dataflow-deferred-list obj))
         (cc:dataflow-signal df 'get-waiting key)
