@@ -779,6 +779,16 @@ process."
           nil))
       nd)))
 
+(defun deferred:processc (d command &rest args)
+  "Process chain of `deferred:process'."
+  (deferred:nextc d
+    (lambda (x) (apply 'deferred:process command args))))
+
+(defun deferred:process-bufferc (d command &rest args)
+  "Process chain of `deferred:process-buffer'."
+  (deferred:nextc d
+    (lambda (x) (apply 'deferred:process-buffer command args))))
+
 (eval-after-load "url"
   ;; for url package
   ;; TODO: proxy, charaset
