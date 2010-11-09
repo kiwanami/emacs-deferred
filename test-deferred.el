@@ -753,11 +753,30 @@
               (errorc it e)))
 
      (expect 
+      (with-temp-buffer (call-process "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1
+       (wait 0.1)
+       (deferred:processc it "pwd" nil)))
+
+     (expect 
       (with-temp-buffer 
         (call-process "ls" nil t "-1")
         (buffer-string))
       (wtest 0.1 ;; maybe fail in some environments...
        (deferred:process-buffer "ls" "-1")
+       (nextc it
+              (unless (buffer-live-p x) 
+                (error "Not live buffer : %s" x))
+              (with-current-buffer x (buffer-string)))))
+
+     (expect 
+      (with-temp-buffer 
+        (call-process "ls" nil t "-1")
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (wait 0.1)
+       (deferred:process-bufferc it "ls" "-1")
        (nextc it
               (unless (buffer-live-p x) 
                 (error "Not live buffer : %s" x))
