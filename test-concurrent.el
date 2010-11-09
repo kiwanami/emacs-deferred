@@ -102,11 +102,11 @@
 
     (push 1 result)
 
-    (deferred:nextc (cc:semaphore-aquire smp)
+    (deferred:nextc (cc:semaphore-acquire smp)
       (lambda(x) (push 2 result)))
-    (deferred:nextc (cc:semaphore-aquire smp)
+    (deferred:nextc (cc:semaphore-acquire smp)
       (lambda(x) (push 3 result)))
-    (deferred:nextc (cc:semaphore-aquire smp)
+    (deferred:nextc (cc:semaphore-acquire smp)
       (lambda(x) (push x result)))
 
     (deferred:$

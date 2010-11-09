@@ -151,7 +151,7 @@
 (defun cc:semaphore-create(permits-num)
   (make-cc:semaphore :max-permits permits-num :permits permits-num))
 
-(defun cc:semaphore-aquire(semaphore)
+(defun cc:semaphore-acquire(semaphore)
   (cond
    ((< 0 (cc:semaphore-permits semaphore))
     (decf (cc:semaphore-permits semaphore))
@@ -191,7 +191,7 @@
   (when (cc:semaphore-waiting-deferreds semaphore)
     (setf (cc:semaphore-waiting-deferreds semaphore) nil)
     (setf (cc:semaphore-permits semaphore) 0))
-  (cc:semaphore-aquire semaphore))
+  (cc:semaphore-acquire semaphore))
 
 
 
