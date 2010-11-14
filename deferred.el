@@ -195,6 +195,11 @@ The lambda function can define with zero and one argument."
   (deferred:message "==================== mark ==== %s" 
     (format-time-string "%H:%M:%S" (current-time))))
 
+(defun deferred:pp (d)
+  (deferred:nextc d
+    (lambda (x) 
+      (pp-display-expression x "*deferred:pp*"))))
+
 (defvar deferred:debug-on-signal nil
 "If non nil, the value `debug-on-signal' is substituted this
 value in the `condition-case' form in deferred
@@ -764,8 +769,10 @@ process."
                    (cond
                     ((string-match "exited abnormally" event)
                      (let ((msg (if (buffer-live-p proc-buf)
-                                    (deferred:buffer-string "%s" proc-buf)
-                                  (concat "NA:" proc-name))))
+                                    (deferred:buffer-string
+                                      (format "Process [%s] exited abnormally : %%s" 
+                                              command) proc-buf)
+                                  (concat "Process exited abnormally: " proc-name))))
                        (kill-buffer proc-buf)
                        (deferred:post-task nd 'ng msg)))
                     ((equal event "finished\n")
