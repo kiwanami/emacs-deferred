@@ -727,6 +727,8 @@
 
      (desc ">>>Application")
 
+     ;; process
+
      (expect 
       (with-temp-buffer 
         (call-process "pwd" nil t nil)
@@ -792,6 +794,75 @@
               (deferred:process-buffer "pwd---")
               (nextc it (deferred:not-called-func))
               (errorc it e)))
+
+     ;;shell
+
+     (expect 
+      (with-temp-buffer 
+        (call-process-shell-command "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process-shell "pwd")))
+
+     (expect 
+      (with-temp-buffer 
+        (call-process-shell-command "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process-shell "pwd" nil)))
+
+     (expect 
+      (length (buffer-list))
+      (deferred:cancel (deferred:process-shell "pwd" nil))
+      (length (buffer-list)))
+
+     (expect "ERROR"
+             (wtest 0.1
+              (deferred:process-shell "lsasfdsadf")
+              (nextc it (deferred:not-called-func))
+              (errorc it "ERROR")))
+
+     (expect 
+      (with-temp-buffer (call-process-shell-command "pwd" nil t nil)
+        (buffer-string))
+      (wtest 0.1
+       (wait 0.1)
+       (deferred:process-shellc it "pwd" nil)))
+
+     (expect 
+      (with-temp-buffer 
+        (call-process-shell-command "ls" nil t "-1")
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (deferred:process-shell-buffer "ls" "-1")
+       (nextc it
+              (unless (buffer-live-p x) 
+                (error "Not live buffer : %s" x))
+              (with-current-buffer x (buffer-string)))))
+
+     (expect 
+      (with-temp-buffer 
+        (call-process-shell-command "ls" nil t "-1")
+        (buffer-string))
+      (wtest 0.1 ;; maybe fail in some environments...
+       (wait 0.1)
+       (deferred:process-shell-bufferc it "ls" "-1")
+       (nextc it
+              (unless (buffer-live-p x) 
+                (error "Not live buffer : %s" x))
+              (with-current-buffer x (buffer-string)))))
+
+     (expect 
+      (length (buffer-list))
+      (deferred:cancel (deferred:process-shell-buffer "ls" nil))
+      (length (buffer-list)))
+
+     (expect "ERROR"
+             (wtest 0.1
+              (deferred:process-shell-buffer "lssaf")
+              (nextc it (deferred:not-called-func))
+              (errorc it "ERROR")))
+
 
      ) ;expectations
     ))
