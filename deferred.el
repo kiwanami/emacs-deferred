@@ -196,6 +196,7 @@ The lambda function can define with zero and one argument."
     (format-time-string "%H:%M:%S" (current-time))))
 
 (defun deferred:pp (d)
+  (require 'pp)
   (deferred:$
     (deferred:nextc d
       (lambda (x) 
