@@ -196,9 +196,15 @@ The lambda function can define with zero and one argument."
     (format-time-string "%H:%M:%S" (current-time))))
 
 (defun deferred:pp (d)
-  (deferred:nextc d
-    (lambda (x) 
-      (pp-display-expression x "*deferred:pp*"))))
+  (deferred:$
+    (deferred:nextc d
+      (lambda (x) 
+        (pp-display-expression x "*deferred:pp*")))
+    (deferred:error it
+      (lambda (e) 
+        (pp-display-expression e "*deferred:pp*")))
+    (deferred:nextc it
+      (lambda (x) (pop-to-buffer "*deferred:pp*")))))
 
 (defvar deferred:debug-on-signal nil
 "If non nil, the value `debug-on-signal' is substituted this
