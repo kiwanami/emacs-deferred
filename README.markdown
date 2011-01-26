@@ -503,8 +503,8 @@ Loop and animation:
 * deferred:try (d &key catch finally)
   * Arguments
     * d: deferred object
-    * catch: [keyword argument] dのタスクを実行中にエラーが起きたときに実行される関数。（マクロ展開によって deferred:error の引数に入る）
-    * finally: [keyword argument] dのタスクが正常・エラーに関わらず終了したあとに実行する関数（マクロ展開によって deferred:watch の引数に入る）
+    * catch: [keyword argument] A function that is called when an error is occurred during tasks 'd'. (This function is expanded as an argument of 'deferred:error'.)
+    * finally: [keyword argument] A function that is called when tasks 'd' finishes whether in success or failure. (This function is expanded as an argument of deferred:watch.)
   * Return
     * a deferred object
   * Try-catch-finally macro. This macro simulates the try-catch-finally block asynchronously.
