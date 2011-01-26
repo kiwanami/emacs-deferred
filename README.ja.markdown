@@ -2,7 +2,7 @@
 
 deferred.elは非同期処理を抽象化して書きやすくするためのライブラリです。APIや
 実装については 
-[JSDeferred](http://github.com/cho45/jsdeferred "JSDeferred") (by cho45さん)と
+[JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45さん)と
 [Mochikit.Async](http://mochikit.com/doc/html/MochiKit/Async.html
 "Mochikit.Async") (by Bob Ippolitoさん)を参考にしています。
 
@@ -14,7 +14,7 @@ deferred.elをload-pathに置いてください。
 
 インストール実行:
 
-    (auto-install-from-url http://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
+    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
 
 
 ## 使い方例 ##

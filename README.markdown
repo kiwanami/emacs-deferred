@@ -2,7 +2,7 @@
 
 'deferred.el' provides facilities to manage asynchronous tasks.
 The API and implementations were translated from 
-[JSDeferred](http://github.com/cho45/jsdeferred "JSDeferred") (by cho45) and 
+[JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45) and 
 [Mochikit.Async](http://mochikit.com/doc/html/MochiKit/Async.html
 "Mochikit.Async") (by Bob Ippolito) in JavaScript.
 
@@ -14,7 +14,7 @@ If you have [auto-install.el](http://d.hatena.ne.jp/rubikitch/20091221/autoinsta
 
 Install by auto-install:
 
-    (auto-install-from-url http://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
+    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
 
 
 ## Sample codes ##
