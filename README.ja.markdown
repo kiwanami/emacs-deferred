@@ -146,7 +146,7 @@ Parallel deferred:
  * 順番は保持されます
  * alistを渡して名前で結果を選ぶことも出来ます
     
-### deferred組み合わせ、try-catch ###
+### deferred組み合わせ、try-catch-finally ###
 
 外部プロセスの wget で画像を取ってきて、ImageMagic の convert コマンドでリサイズし、バッファに画像を表示します。（wget, convertが無いと動きません）
 deferred を組み合わせて、非同期処理の try-catch のような構造を作ることが出来ます。
@@ -182,6 +182,29 @@ Get an image by wget and resize by ImageMagick:
 * deferred を静的につなげることで、自由に組み合わせることが出来ます。
  * 関数などで個別の deferred 処理を作って、後で一つにまとめるなど。
 
+なお、この例は以下のようにも書けます。（注意：完全に同じ動作ではありません。また、非同期の仕組み上、finallyタスクは必ず実行することを保証するものではありません。）
+
+Try-catch-finally:
+
+    (deferred:$
+      (deferred:try
+        (deferred:$
+          (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
+          (deferred:nextc it
+            (lambda () (deferred:process "convert" "a.jpg" "-resize" "100x100" "jpg:b.jpg")))
+          (deferred:nextc it
+            (lambda ()
+              (clear-image-cache)
+              (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
+        :catch
+        (lambda (err) (insert "Can not get a image! : " err))
+        :finally
+        (lambda ()
+          (delete-file "a.jpg")
+          (delete-file "b.jpg")))
+      (deferred:nextc it
+        (lambda (x) (message ">> %s" x))))
+
 ### earlierでtimeout ###
 
 外部プロセスで3秒待つコマンドを実行しますが、途中でキャンセルします。
@@ -202,6 +225,17 @@ Timeout Process:
 * deferred:wait の待つ時間を5秒などにすると、コマンドの結果が渡ってきます。
 * エラーは完了と見なされません。すべての処理がエラーになった場合は nil が次に渡ります。
 * deferred:parallel と deferred:earlier は lisp の and や or のようなイメージです。
+
+なお、この例は deferred:timeout マクロを使って以下のようにも書けます。
+
+Timeout macro:
+
+    (deferred:$
+      (deferred:timeout
+        1000 "canceled!"
+        (deferred:process "sh" "-c" "sleep 3 | echo 'hello!'"))
+      (deferred:nextc it
+        (lambda (x) (insert x))))
 
 ### ループとアニメーション・スレッド ###
 
@@ -278,6 +312,17 @@ Loop and animation:
   * 引数のdeferredオブジェクトを無効にして、コールバックやエラーバック関数が実行されないようにします。
   * この関数は引数のdeferredオブジェクトを破壊的に変更します。
 
+* deferred:watch (d callback)
+  * 引数：
+    * d: deferredオブジェクト
+    * callback: 引数1つか0個の関数
+  * 返値：deferredオブジェクト
+  * 引数の関数をコールバックとエラーバックの両方でラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
+  * 次のdeferredタスクへの値は前のタスクの結果をそのまま渡します。
+    * callbackが何を返しても、callback内部でエラーが発生しても、deferredの流れに影響を与えません。
+    * callback内部の非同期タスクは後続のdeferredタスクと非同期に実行されます。
+  * →deferred処理の流れに割り込んだり、実行状況を監視したいときに使います。
+
 * deferred:wait (msec)
   * 引数：
     * msec: 数値
@@ -342,20 +387,20 @@ Loop and animation:
   * 返値：deferredオブジェクト
   * オリジナルのapplyを非同期にした関数です
 
-* deferred:process (command args...)
+* deferred:process (command args...) / deferred:process-shell (command args...)
   * 引数：
     * command: 外部実行コマンド
     * args: コマンドの引数(可変長)
   * 返値：deferredオブジェクト
-  * 外部コマンドを非同期で実行します。
+  * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
   * 外部コマンドのstdoutの結果が文字列として後続のdeferredに渡ります。
 
-* deferred:process-buffer (command args...)
+* deferred:process-buffer (command args...) / deferred:process-shell-buffer (command args...)
   * 引数：
     * command: 外部実行コマンド
     * args: コマンドの引数(可変長)
   * 返値：deferredオブジェクト
-  * 外部コマンドを非同期で実行します。
+  * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
   * 外部コマンドのstdoutの結果がバッファとして後続のdeferredに渡ります。
     * バッファの処分は後続のdeferredに任されます。
 
@@ -434,6 +479,41 @@ Loop and animation:
   * 返値：deferredオブジェクトか、結果値
   * 引数のdeferredオブジェクトからエラーバックを非同期に開始します。
 
+
+### ユーティリティマクロ ###
+
+いくつかの便利なマクロを用意しています。マクロですので、スコープや評価順序などに注意して予想外の動作に気をつけてください。
+
+* deferred:try (d &key catch finally)
+  * 引数：
+    * d: deferredオブジェクト
+    * catch: [キーワード引数] dのタスクを実行中にエラーが起きたときに実行される関数。（マクロ展開によって deferred:error の引数に入る）
+    * finally: [キーワード引数] dのタスクが正常・エラーに関わらず終了したあとに実行する関数（マクロ展開によって deferred:watch の引数に入る）
+  * 返値：deferredオブジェクト
+  * 非同期処理で try-catch-finally のような処理を実現するマクロです。所詮非同期なので、メインのdeferredタスクの内容によっては、finallyタスクに処理が回ってこない可能性もあります。
+  * deferred:error と deferred:watch を使って実装しています。
+
+* deferred:timeout (msec timeout-form d)
+  * 引数：
+    * msec: 数値
+    * timeout-form: キャンセル時に評価する sexp-form
+    * d: deferredオブジェクト
+  * 返値：deferredオブジェクト
+  * dのタスクを開始してmsecミリ秒経過した場合、dのタスクをキャンセルして、timeout-formの結果を後続のdeferredに渡します。
+  * deferred:earlierとdeferred:waitを使って実装しています。
+
+* deferred:process〜
+  * deferred:processc (d command args...)
+  * deferred:process-bufferc (d command args...)
+  * deferred:process-shellc (d command args...)
+  * deferred:process-shell-bufferc (d command args...)
+  * 引数：
+    * d: deferredオブジェクト
+    * command: 外部実行コマンド
+    * args: コマンドの引数(可変長)
+  * 返値：deferredオブジェクト
+  * 外部コマンドを非同期で実行するdeferredオブジェクトをdに接続します。
+  * deferred:nextc の lambda の中に元の関数を埋め込んで実装しています。
 
 ### 実行・接続 ###
 
@@ -552,5 +632,5 @@ deferredによってどのようなことが可能になるかなどについて
 
 * * * * *
 
-(C) 2010  SAKURAI Masashi  All rights reserved.
+(C) 2010, 2011  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net

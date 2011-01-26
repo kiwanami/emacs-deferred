@@ -1,6 +1,6 @@
 ;;; test code for deferred.el
 
-;; Copyright (C) 2010  SAKURAI Masashi
+;; Copyright (C) 2010, 2011  SAKURAI Masashi
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -15,6 +15,11 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Run tests:
+;; $ el-expectations test-deferred.el
 
 
 (require 'el-expectations)
@@ -159,6 +164,9 @@
      (expect 3  (lexical-let ((st 1)) ;ng
                   (deferred:call-lambda
                     (byte-compile (lambda (x) (+ st 2))) 0)))
+     (expect '(wrong-number-of-arguments "org")
+             (deferred:call-lambda
+               (lambda (x) (signal 'wrong-number-of-arguments '("org")))))
 
      (desc "> Basic Test")
 
@@ -296,6 +304,33 @@
                (next "Child deferred chain"))
               (errorf it "Error on simple chain : %s")))
 
+     (expect "chain watch ok"
+             ;; watch chain: normal
+             (let ((val "><"))
+               (dtest
+                (next "chain")
+                (deferred:watch it
+                  (lambda (x) (setq val " watch") nil))
+                (nextc it (concat x val " ok")))))
+
+     (expect "error!! watch ok"
+             ;; watch chain: error
+             (let ((val "><"))
+               (dtest
+                (next "chain")
+                (nextc it (error "error!!"))
+                (deferred:watch it (lambda (x) (setq val " watch") nil))
+                (errorc it (concat e val " ok")))))
+
+     (expect "chain watch ok2"
+             ;; watch chain: normal
+             (let ((val "><"))
+               (dtest
+                (next "chain")
+                (deferred:watch it
+                  (lambda (x) (error "ERROR")))
+                (nextc it (concat x " watch ok2")))))
+
      (desc "> async connect")
      
      (expect "saved result!"
@@ -389,6 +424,70 @@
                       (nextc it (concat x "!!"))))
               (nextc it 
                      (concat x " GO"))))
+
+     (desc "> try-catch-finally")
+
+     (expect "try"
+             ;; try block
+             (dtest
+              (deferred:try 
+                (next "try"))))
+
+     (expect "try"
+             ;; try catch block
+             (dtest
+              (deferred:try 
+                (next "try")
+                :catch
+                (lambda (e) (concat "CATCH:" e)))))
+
+     (expect "try-finally"
+             ;; try catch finally block
+             (let (val)
+               (dtest
+                (deferred:try 
+                  (next "try")
+                  :finally
+                  (lambda (x) (setq val "finally")))
+                (nextc it (concat x "-" val)))))
+
+     (expect "try-finally2"
+             ;; try catch finally block
+             (let (val)
+               (dtest
+                (deferred:try 
+                  (next "try")
+                  :catch
+                  (lambda (e) (concat "CATCH:" e))
+                  :finally
+                  (lambda (x) (setq val "finally2")))
+                (nextc it (concat x "-" val)))))
+
+     (expect "try-catch:err"
+             ;; try block
+             (dtest
+              (deferred:try 
+                ($ (next "start")
+                   (nextc it (error "err"))
+                   (nextc it (deferred:not-called-func x)))
+                :catch
+                (lambda (e) (concat "catch:" e)))
+              (nextc it (concat "try-" x))))
+
+     (expect "try-catch:err-finally"
+             ;; try catch finally block
+             (let (val)
+               (dtest
+                (deferred:try 
+                  ($ (next "start")
+                     (nextc it (error "err"))
+                     (nextc it (deferred:not-called-func x)))
+                  :catch
+                  (lambda (e) (concat "catch:" e))
+                  :finally
+                  (lambda (x) (setq val "finally")))
+                (nextc it (concat "try-" x "-" val)))))
+
 
 
      (desc ">>> Utility Functions Tests")
@@ -748,11 +847,11 @@
       (deferred:cancel (deferred:process "pwd" nil))
       (length (buffer-list)))
 
-     (expect "Searching for program: no such file or directory, pwd---"
+     (expect 0
              (dtest
               (deferred:process "pwd---")
               (nextc it (deferred:not-called-func))
-              (errorc it e)))
+              (errorc it (string-match "^Searching for program:" e))))
 
      (expect 
       (with-temp-buffer (call-process "pwd" nil t nil)
@@ -789,11 +888,11 @@
       (deferred:cancel (deferred:process-buffer "ls" nil))
       (length (buffer-list)))
 
-     (expect "Searching for program: no such file or directory, pwd---"
+     (expect 0
              (dtest
               (deferred:process-buffer "pwd---")
               (nextc it (deferred:not-called-func))
-              (errorc it e)))
+              (errorc it (string-match "^Searching for program:" e))))
 
      ;;shell
 

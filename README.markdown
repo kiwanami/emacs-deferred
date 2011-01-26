@@ -145,13 +145,13 @@ Parallel deferred:
  * The order of the results is corresponding to one of the argument.
  * Giving an alist of tasks as the argument, the results alist is returned.
     
-### Deferred Combination : try-catch ###
+### Deferred Combination : try-catch-finally ###
 
 This s-exp executes following tasks:
 * Getting an image by wget command,
 * Resizing the image by convert command in ImageMagick,
 * Insert the re-sized image into the current buffer.
-You can construct the control structure of deferred tasks, like try-catch-finally.
+You can construct the control structure of deferred tasks, like try-catch-finally in Java.
 
 Get an image by wget and resize by ImageMagick:
 
@@ -183,6 +183,29 @@ Get an image by wget and resize by ImageMagick:
 
 * In this case, the deferred tasks are statically connected.
 
+Here is an another sample code for try-catch-finally blocks. This is simpler than above code because of the 'deferred:try' macro. (Note: They bring the same results practically, but are not perfectly identical. The 'finally' task may not be called because of asynchrony.)
+
+Try-catch-finally:
+
+    (deferred:$
+      (deferred:try
+        (deferred:$
+          (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
+          (deferred:nextc it
+            (lambda () (deferred:process "convert" "a.jpg" "-resize" "100x100" "jpg:b.jpg")))
+          (deferred:nextc it
+            (lambda ()
+              (clear-image-cache)
+              (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
+        :catch
+        (lambda (err) (insert "Can not get a image! : " err))
+        :finally
+        (lambda ()
+          (delete-file "a.jpg")
+          (delete-file "b.jpg")))
+      (deferred:nextc it
+        (lambda (x) (message ">> %s" x))))
+
 ### Timeout ###
 
 Although a long time command is executed (3 second sleeping), the task is canceled by timeout for 1 second.
@@ -204,6 +227,17 @@ Timeout Process:
 * When a task finishes abnormally, the task is ignored.
   * When all tasks finishes abnormally, the next task receives nil.
 * The functions 'deferred:parallel' and 'deferred:earlier' may be corresponding to 'and' and 'or', respectively.
+
+Here is an another sample code for timeout, employing 'deferred:timeout' macro.
+
+Timeout macro:
+
+    (deferred:$
+      (deferred:timeout
+        1000 "canceled!"
+        (deferred:process "sh" "-c" "sleep 3 | echo 'hello!'"))
+      (deferred:nextc it
+        (lambda (x) (insert x))))
 
 ### Loop and Animation ###
 
@@ -283,6 +317,16 @@ Loop and animation:
   * Invalidate the given deferred object.
   * Because this function modifies the deferred object, it can not be used in future.
 
+* deferred:watch (d callback)
+  * Arguments
+    * d: deferred object
+    * callback: a function with zero or one argument
+  * Return
+    * a deferred object
+  * Create a deferred object with watch task and connect it to the given deferred object.
+  * The watch task CALLBACK can not affect deferred chains with return values.
+  * This function is used in following purposes, simulation of try-finally block in asynchronous tasks, monitoring of progress of deferred tasks.
+
 * deferred:wait (msec)
   * Arguments
     * msec: a number (millisecond)
@@ -352,22 +396,22 @@ Loop and animation:
     * a deferred object
   * a wrapper of the function 'apply'
 
-* deferred:process (command args...)
+* deferred:process (command args...) / deferred:process-shell (command args...)
   * Arguments
     * command: command to execute
     * args: command arguments (variable length)
   * Return
     * a deferred object
-  * Execute a command asynchronously.
+  * Execute a command asynchronously. These functions are wrappers of 'start-process' and 'start-process-shell-command'.
   * The subsequent deferred task receives the stdout from the command as a string.
 
-* deferred:process-buffer (command args...)
+* deferred:process-buffer (command args...) / deferred:process-shell-buffer (command args...)
   * Arguments
     * command: command to execute
     * args: command arguments (variable length)
   * Return
     * a deferred object
-  * Execute a command asynchronously.
+  * Execute a command asynchronously. These functions are wrappers of 'start-process' and 'start-process-shell-command'.
   * The subsequent deferred task receives the stdout from the command as a buffer.
     * The following tasks are responsible to kill the buffer.
 
@@ -454,6 +498,42 @@ Loop and animation:
     * a deferred object or a result value
   * Start executing the deferred tasks from errorback. The first task is executed asynchronously.
 
+### Utility Macros ###
+
+* deferred:try (d &key catch finally)
+  * Arguments
+    * d: deferred object
+    * catch: [keyword argument] dのタスクを実行中にエラーが起きたときに実行される関数。（マクロ展開によって deferred:error の引数に入る）
+    * finally: [keyword argument] dのタスクが正常・エラーに関わらず終了したあとに実行する関数（マクロ展開によって deferred:watch の引数に入る）
+  * Return
+    * a deferred object
+  * Try-catch-finally macro. This macro simulates the try-catch-finally block asynchronously.
+  * Because of asynchrony, this macro does not ensure that the 'finally' task should be called.
+  * This macro is implemented by 'deferred:error' and 'deferred:watch'.
+
+* deferred:timeout (msec timeout-form d)
+  * Arguments
+    * msec: a number
+    * timeout-form: sexp-form
+    * d: a deferred object
+  * Return
+    * a deferred object
+  * Time out macro on a deferred task 'd'.
+  * If the deferred task 'd' does not complete within 'timeout-msec', this macro cancels the deferred task and return the 'timeout-form'.
+  * This macro is implemented by 'deferred:earlier' and 'deferred:wait'.
+
+* deferred:process...
+  * deferred:processc (d command args...)
+  * deferred:process-bufferc (d command args...)
+  * deferred:process-shellc (d command args...)
+  * deferred:process-shell-bufferc (d command args...)
+  * Arguments
+    * d: a deferred object
+    * command: command to execute
+    * args: command arguments (variable length)
+  * Return
+    * a deferred object
+  * This macro wraps the deferred:process function in deferred:nextc and connect the given deferred task.
 
 ### Execution and Connection ###
 
@@ -567,5 +647,5 @@ Following documents are good introduction to deferred.
 
 * * * * *
 
-(C) 2010  SAKURAI Masashi  All rights reserved.
+(C) 2010, 2011  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net

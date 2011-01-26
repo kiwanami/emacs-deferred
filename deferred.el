@@ -1,6 +1,6 @@
 ;;; deferred.el --- Simple asynchronous functions for emacs lisp
 
-;; Copyright (C) 2010  SAKURAI Masashi
+;; Copyright (C) 2010, 2011  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
 ;; Keywords: deferred, async
@@ -51,71 +51,7 @@
 ;;     (lambda (x)
 ;;       (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
 
-
-;;; API Guide
-
-;; ** Base functions
-
-;; * deferred:next(fun) -> d
-;; Execute a function asynchronously.
-
-;; * deferred:nextc(d, fun) -> d
-;; Add a callback function to the deferred object.
-
-;; * deferred:error(d, fun) -> d
-;; Add a errorback function to the deferred object.
-
-;; * deferred:cancel(d) -> d
-;; Cancel the deferred task.
-
-;; * deferred:wait(msec) -> d
-;; Return a deferred object that will be called after the specified millisecond.
-
-;; * deferred:$
-;; Anaphoric macro for deferred chains.
-
-;; ** Utility functions
-
-;; * deferred:loop(num, fun) -> d
-;; Iterate the function for the specified times.
-
-;; * deferred:parallel(fun1, fun2, ...) -> d
-;; Execute given functions in parallel and wait for all callback values.
-
-;; * deferred:earlier(fun1, fun2, ...) -> d
-;; Execute given functions in parallel and wait for the first callback value.
-
-;; ** deferred instance methods
-
-;; * deferred:new(&optional fun) -> d
-;; Create a deferred object.
-
-;; * deferred:callback(value)
-;; Start callback chain.
-
-;; * deferred:errorback(error)
-;; Start errorback chain.
-;; All errors occurred in deferred tasks are cought by errorback handlers.
-;; If you want to debug the error, set `deferred:debug-on-signal' to non-nil.
-;; (setq deferred:debug-on-signal t)
-
-;; * deferred:callback-post(value)
-;; Start callback chain asynchronously.
-
-;; * deferred:callback-post(error)
-;; Start errorback chain asynchronously.
-
-;; ** Wrapper function
-
-;; * deferred:call(fun, arg1, arg2, ...) -> d
-;; * deferred:apply(fun, arg-list) -> d
-;; Call the function asynchronously.
-
-;; * deferred:process(cmd, args, ...) -> d
-;; Execute the command asynchronously.
-
-;; * deferred:url-retrieve(url) -> d
-;; Retrieve an content of the url asynchronously.
+;; See the readme for further API documentation.
 
 ;; ** Applications
 
@@ -124,7 +60,6 @@
 
 ;; This program makes simple multi-thread function, using
 ;; deferred.el.
-
 
 
 (eval-when-compile
@@ -170,8 +105,10 @@
 The lambda function can define with zero and one argument."
   (condition-case err
       (funcall f arg)
-    ('wrong-number-of-arguments (funcall f))))
-
+    ('wrong-number-of-arguments 
+     (condition-case err2 
+         (funcall f)
+       ('wrong-number-of-arguments err))))) ; return the first error
 
 ;; debug
 
@@ -485,6 +422,19 @@ is a short cut of following code:
   (let ((nd (make-deferred :errorback callback)))
     (deferred:set-next d nd)))
 
+(defun deferred:watch (d callback)
+  "Create a deferred object with watch task and connect it to the given deferred object.
+The watch task CALLBACK can not affect deferred chains with
+return values. This function is used in following purposes,
+simulation of try-finally block in asynchronous tasks, progress
+monitoring of tasks."
+  (lexical-let* 
+      ((callback callback)
+       (normal (lambda (x) (ignore-errors (deferred:call-lambda callback x)) x))
+       (err    (lambda (e) (ignore-errors (deferred:call-lambda callback e)) (error e))))
+    (let ((nd (make-deferred :callback normal :errorback err)))
+      (deferred:set-next d nd))))
+
 (defun deferred:wait (msec)
   "Return a deferred object scheduled at MSEC millisecond later."
   (lexical-let 
@@ -521,6 +471,7 @@ is a short cut of following code:
 ;; Utility functions
 
 (defun deferred:empty-p (times-or-list)
+  "[internal] Return non-nil if TIMES-OR-LIST is the number zero or nil."
   (or (and (numberp times-or-list) (<= times-or-list 0))
       (and (listp times-or-list) (null times-or-list))))
 
@@ -714,6 +665,17 @@ deferred task and return the TIMEOUT-FORM."
        (lambda (x) ,timeout-form))
      ,d))
 
+(defmacro* deferred:try (d &key catch finally)
+  "Try-catch-finally macro. This macro simulates the
+try-catch-finally block asynchronously. CATCH and FINALLY can be
+nil. Because of asynchrony, this macro does not ensure that the
+task FINALLY should be called."
+  (let ((chain 
+         (if catch `((deferred:error it ,catch)))))
+    (when finally
+      (setq chain (append chain `((deferred:watch it ,finally)))))
+    `(deferred:$ ,d ,@chain)))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -862,10 +824,10 @@ into. Currently dynamic binding variables are not supported."
 
      (defun deferred:url-delete-header (buf)
        (with-current-buffer buf
-         (goto-char (point-min))
-         (let ((pos (re-search-forward "\n\n")))
+         (let ((pos (url-http-symbol-value-in-buffer
+                     'url-http-end-of-headers buf)))
            (when pos
-             (delete-region (point-min) pos))))
+             (delete-region (point-min) (1+ pos)))))
        buf)
 
      (defun deferred:url-delete-buffer (buf)
