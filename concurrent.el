@@ -28,20 +28,21 @@
 ;; - Semaphore
 ;; - Dataflow
 ;; - Signal/Channel
-;; 
-;; 
 
 (eval-when-compile
   (require 'cl))
 
 (require 'deferred)
 
+(defvar cc:version nil "version number")
+(setq cc:version "0.1")
+
 ;;; Code:
 
 
 
 (defmacro cc:aif (test-form then-form &rest else-forms)
-  (declare (debug ("test-form" form "then-form" form &rest form)))
+  (declare (debug (form form &rest form)))
   `(let ((it ,test-form))
      (if it ,then-form ,@else-forms)))
 (put 'cc:aif 'lisp-indent-function 2)
@@ -178,6 +179,16 @@
      (t
       (incf (cc:semaphore-permits semaphore)))))
   semaphore)
+
+(defun cc:semaphore-with (semaphore body-func &optional error-func)
+  (lexical-let ((semaphore semaphore))
+    (deferred:try
+      (deferred:nextc (cc:semaphore-acquire semaphore) body-func)
+      :catch 
+      error-func
+      :finally
+      (lambda (x) (cc:semaphore-release semaphore)))))
+(put 'cc:semaphore-with 'lisp-indent-function 1)
 
 (defun cc:semaphore-release-all (semaphore)
   (setf (cc:semaphore-permits semaphore)

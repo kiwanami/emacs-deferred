@@ -24,7 +24,7 @@
 (require 'cl)
 (require 'pp)
 
-(defmacro deferred:debug (d msg &rest args)
+(defmacro cc:debug (d msg &rest args)
   `(deferred:nextc ,d
      (lambda (x) (funcall 'message ,msg ,@args) x)))
 
@@ -62,7 +62,7 @@
     (deferred:call gen)
     dfinish))
 
-;; (deferred:debug (cc:test-fib-gen) "Fib10 : %s" x)
+;; (cc:debug (cc:test-fib-gen) "Fib10 : %s" x)
 
 ;; thread
 
@@ -86,11 +86,11 @@
               (or (and (< 1.0 elapsed-time) (< elapsed-time 4)) elapsed-time)))))
     dfinish))
 
-;; (deferred:debug (cc:test-thread) "Thread : %s" x)
+;; (cc:debug (cc:test-thread) "Thread : %s" x)
 
 ;; semaphore
 
-(defun cc:test-semaphore ()
+(defun cc:test-semaphore1 ()
   (lexical-let*
       ((result nil)
        (dfinish (deferred:new 
@@ -129,9 +129,54 @@
           (push (cons 'size (length (cc:semaphore-waiting-deferreds smp))) result)))
       (deferred:nextc it
         (lambda (x) (deferred:callback dfinish))))
+
     dfinish))
 
-;; (deferred:debug (cc:test-semaphore) "Semaphore : %s" x)
+;; (cc:debug (cc:test-semaphore1) "Semaphore1 : %s" x)
+
+(defun cc:test-semaphore2 ()
+  (lexical-let*
+      ((result nil)
+       (dfinish (deferred:new 
+                  (lambda (x)
+                    (setq result (reverse result))
+                    (or (equal '(0 a b c d e f g) result)
+                        result))))
+       (smp (cc:semaphore-create 1)))
+
+    (push 0 result)
+
+    (cc:semaphore-with 
+     smp (lambda (x) 
+           (deferred:nextc (cc:semaphore-acquire smp)
+             (lambda (x)
+               (push 'c result)
+               (cc:semaphore-release smp)))
+           (push 'a result)
+           (deferred:nextc
+             (deferred:wait 100)
+             (lambda (x) (push 'b result)))))
+
+    (cc:semaphore-with 
+     smp (lambda (x) 
+           (deferred:nextc (cc:semaphore-acquire smp)
+             (lambda (x) 
+               (push 'g result)
+               (cc:semaphore-release smp)
+               (deferred:callback dfinish)))
+             (push 'd result)
+             (deferred:nextc
+               (deferred:wait 100)
+               (lambda (x) 
+                 (push 'e result)
+                 (error "SMP CC ERR"))))
+     (lambda (e) 
+       (when (equal "SMP CC ERR" e)
+         (push 'f result))))
+
+    dfinish))
+
+;; (cc:debug (cc:test-semaphore2) "Semaphore2 : %s" x)
 
 ;; Dataflow
 
@@ -170,7 +215,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-simple1) "Dataflow1 : %s" x)
+;; (cc:debug (cc:test-dataflow-simple1) "Dataflow1 : %s" x)
 
 (defun cc:test-dataflow-simple2 ()
   (lexical-let* 
@@ -193,7 +238,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-simple2) "Dataflow2 : %s" x)
+;; (cc:debug (cc:test-dataflow-simple2) "Dataflow2 : %s" x)
 
 (defun cc:test-dataflow-simple3 ()
   (lexical-let* 
@@ -226,7 +271,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-simple3) "Dataflow3 : %s" x)
+;; (cc:debug (cc:test-dataflow-simple3) "Dataflow3 : %s" x)
 
 (defun cc:test-dataflow-simple4 ()
   (lexical-let* 
@@ -258,7 +303,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-simple4) "Dataflow4 : %s" x)
+;; (cc:debug (cc:test-dataflow-simple4) "Dataflow4 : %s" x)
 
 (defun cc:test-dataflow-signal ()
   (lexical-let* 
@@ -320,7 +365,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-signal) "Dataflow Signal : %s" x)
+;; (cc:debug (cc:test-dataflow-signal) "Dataflow Signal : %s" x)
 
 
 (defun cc:test-dataflow-parent1 ()
@@ -366,7 +411,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-parent1) "Dataflow Parent1 : %s" x)
+;; (cc:debug (cc:test-dataflow-parent1) "Dataflow Parent1 : %s" x)
 
 (defun cc:test-dataflow-parent2 ()
   (lexical-let* 
@@ -397,7 +442,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-dataflow-parent2) "Dataflow Parent : %s" x)
+;; (cc:debug (cc:test-dataflow-parent2) "Dataflow Parent : %s" x)
 
 
 ;; Signal
@@ -442,9 +487,9 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-signal1) "Signal1 : %s" x)
+;; (cc:debug (cc:test-signal1) "Signal1 : %s" x)
 
-;; (deferred:debug (cc:test-signal2) "Signal2 : %s" x)
+;; (cc:debug (cc:test-signal2) "Signal2 : %s" x)
 
 (defun cc:test-signal2 ()
   (lexical-let* 
@@ -511,7 +556,7 @@
 
     dfinish))
 
-;; (deferred:debug (cc:test-signal2) "Signal2 : %s" x)
+;; (cc:debug (cc:test-signal2) "Signal2 : %s" x)
 
 (defvar cc:test-finished-flag nil)
 
@@ -521,7 +566,8 @@
     (deferred:parallel
       (loop for i in '(cc:test-fib-gen
                        cc:test-thread
-                       cc:test-semaphore
+                       cc:test-semaphore1
+                       cc:test-semaphore2
                        cc:test-dataflow-simple1
                        cc:test-dataflow-simple2
                        cc:test-dataflow-simple3
