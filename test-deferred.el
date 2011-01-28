@@ -164,7 +164,7 @@
      (expect 3  (lexical-let ((st 1)) ;ng
                   (deferred:call-lambda
                     (byte-compile (lambda (x) (+ st 2))) 0)))
-     (expect '(wrong-number-of-arguments "org")
+     (expect (error wrong-number-of-arguments '("org"))
              (deferred:call-lambda
                (lambda (x) (signal 'wrong-number-of-arguments '("org")))))
 

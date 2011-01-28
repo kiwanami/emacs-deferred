@@ -110,7 +110,8 @@ The lambda function can define with zero and one argument."
     ('wrong-number-of-arguments 
      (condition-case err2 
          (funcall f)
-       ('wrong-number-of-arguments err))))) ; return the first error
+       ('wrong-number-of-arguments
+        (signal 'wrong-number-of-arguments (cdr err))))))) ; return the first error
 
 ;; debug
 
@@ -267,7 +268,11 @@ Mainly this function is called by timer asynchronously."
 
 (defun deferred:default-errorback (error-msg)
   "[internal] Default errorback function."
-  (error (deferred:esc-msg error-msg)))
+  (error (deferred:esc-msg
+           (cond
+            ((stringp error-msg) error-msg)
+            ((listp error-msg) (cadr error-msg))
+            (t (format "%S" error-msg))))))
 
 (defun deferred:default-cancel (d)
   "[internal] Default canceling function."
@@ -813,10 +818,12 @@ into. Currently dynamic binding variables are not supported."
        (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf)
          (deferred:next
            (lambda (x)
-             (setq buf
-                   (url-retrieve 
-                    url (lambda (xx) (deferred:post-task nd 'ok buf))
-                    cbargs))
+             (condition-case err
+                 (setq buf
+                       (url-retrieve 
+                        url (lambda (xx) (deferred:post-task nd 'ok buf))
+                        cbargs))
+                 (error (deferred:post-task nd 'ng err)))
              nil))
          (setf (deferred-cancel nd)
                (lambda (x) 
@@ -865,10 +872,13 @@ object receives the buffer object that URL will load into."
                     '(("Content-Type" . "application/x-www-form-urlencoded")))
                    (url-request-data
                     (deferred:url-param-serialize params)))
-               (setq buf 
-                     (url-retrieve 
-                      url 
-                      (lambda (xx) (deferred:post-task nd 'ok buf)))))
+               (condition-case err
+                   (setq buf 
+                         (url-retrieve 
+                          url 
+                          (lambda (&rest args) 
+                            (deferred:post-task nd 'ok buf))))
+                 (error (deferred:post-task nd 'ng err))))
              nil))
          (setf (deferred-cancel nd)
                (lambda (x) 
