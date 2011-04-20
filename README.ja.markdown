@@ -281,203 +281,203 @@ Loop and animation:
 良く使用する基本的な関数やマクロです。
 
 * deferred:next (callback)
-  * 引数：
-    * callback: 引数1つか0個の関数
-  * 返値：deferredオブジェクト
-  * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。また実行キューに入れて非同期実行をスケジュールします。
-    * →関数を非同期で実行します。
+   * 引数：
+      * callback: 引数1つか0個の関数
+   * 返値：deferredオブジェクト
+   * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。また実行キューに入れて非同期実行をスケジュールします。
+      * →関数を非同期で実行します。
  
 
 * deferred:nextc (d callback)
    * 引数：
-     * d: deferredオブジェクト
-     * callback: 引数1つか0個の関数
+      * d: deferredオブジェクト
+      * callback: 引数1つか0個の関数
    * 返値：deferredオブジェクト
    * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
-     * →前のdeferredの後に関数を実行するように連結します。
+      * →前のdeferredの後に関数を実行するように連結します。
 
 * deferred:error (d errorback)
-  * 引数：
-    * d: deferredオブジェクト
-    * errorback: 引数1つか0個の関数
-  * 返値：deferredオブジェクト
-  * 引数の関数をエラー処理コールバックとしてラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
-    * →前のdeferredでエラーが起きたときに、この関数で処理するようにします。
-  * この関数内で例外を発生しなければ、後続のdeferredのコールバック関数が実行されます。
+   * 引数：
+      * d: deferredオブジェクト
+      * errorback: 引数1つか0個の関数
+   * 返値：deferredオブジェクト
+   * 引数の関数をエラー処理コールバックとしてラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
+      * →前のdeferredでエラーが起きたときに、この関数で処理するようにします。
+   * この関数内で例外を発生しなければ、後続のdeferredのコールバック関数が実行されます。
 
 * deferred:cancel (d)
-  * 引数：
-    * d: deferredオブジェクト
-  * 返値：引数のdeferredオブジェクト（無効になっている）
-  * 引数のdeferredオブジェクトを無効にして、コールバックやエラーバック関数が実行されないようにします。
-  * この関数は引数のdeferredオブジェクトを破壊的に変更します。
+   * 引数：
+      * d: deferredオブジェクト
+   * 返値：引数のdeferredオブジェクト（無効になっている）
+   * 引数のdeferredオブジェクトを無効にして、コールバックやエラーバック関数が実行されないようにします。
+   * この関数は引数のdeferredオブジェクトを破壊的に変更します。
 
 * deferred:watch (d callback)
-  * 引数：
-    * d: deferredオブジェクト
-    * callback: 引数1つか0個の関数
-  * 返値：deferredオブジェクト
-  * 引数の関数をコールバックとエラーバックの両方でラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
-  * 次のdeferredタスクへの値は前のタスクの結果をそのまま渡します。
-    * callbackが何を返しても、callback内部でエラーが発生しても、deferredの流れに影響を与えません。
-    * callback内部の非同期タスクは後続のdeferredタスクと非同期に実行されます。
-  * →deferred処理の流れに割り込んだり、実行状況を監視したいときに使います。
+   * 引数：
+      * d: deferredオブジェクト
+      * callback: 引数1つか0個の関数
+   * 返値：deferredオブジェクト
+   * 引数の関数をコールバックとエラーバックの両方でラップしたdeferredオブジェクトを生成し、引数のdeferredオブジェクトに接続して返します。
+   * 次のdeferredタスクへの値は前のタスクの結果をそのまま渡します。
+      * callbackが何を返しても、callback内部でエラーが発生しても、deferredの流れに影響を与えません。
+      * callback内部の非同期タスクは後続のdeferredタスクと非同期に実行されます。
+   * →deferred処理の流れに割り込んだり、実行状況を監視したいときに使います。
 
 * deferred:wait (msec)
-  * 引数：
-    * msec: 数値
-  * 返値：deferredオブジェクト
-  * この関数が実行された時点から引数で指定されたミリ秒待って、後続のdeferredオブジェクトを実行します。
-  * 後続のdeferredオブジェクトのコールバック関数の引数には、実際に経過した時間がミリ秒で渡ってきます。
+   * 引数：
+      * msec: 数値
+   * 返値：deferredオブジェクト
+   * この関数が実行された時点から引数で指定されたミリ秒待って、後続のdeferredオブジェクトを実行します。
+   * 後続のdeferredオブジェクトのコールバック関数の引数には、実際に経過した時間がミリ秒で渡ってきます。
 
 * deferred:$ (forms...)
-  * 引数：1つ以上のdeferredフォーム
-  * 返値：一番最後のdeferredオブジェクト
-  * deferredオブジェクトのチェインを書きやすくするためのアナフォリックマクロです。
-  * 一つ前のdeferredオブジェクトが「it」で渡ってきます。
+   * 引数：1つ以上のdeferredフォーム
+   * 返値：一番最後のdeferredオブジェクト
+   * deferredオブジェクトのチェインを書きやすくするためのアナフォリックマクロです。
+   * 一つ前のdeferredオブジェクトが「it」で渡ってきます。
 
 #### ユーティリティ ####
 
 複数のdeferredを扱う関数です。
 
 * deferred:loop (number-or-list callback)
-  * 引数：
-    * number-or-list: 1以上の整数もしくはリスト
-    * callback: 引数1つか0個の関数
-  * 返値：deferredオブジェクト
-  * 引数の数値で指定された数だけループするようなdeferredオブジェクトを生成して返します。関数には0から始まるカウンタが渡ってきます。
-  * 整数ではなくリストが渡ってきた場合は、mapcのようにループします。
+   * 引数：
+      * number-or-list: 1以上の整数もしくはリスト
+      * callback: 引数1つか0個の関数
+   * 返値：deferredオブジェクト
+   * 引数の数値で指定された数だけループするようなdeferredオブジェクトを生成して返します。関数には0から始まるカウンタが渡ってきます。
+   * 整数ではなくリストが渡ってきた場合は、mapcのようにループします。
 
 * deferred:parallel (list-or-alist)
-  * 引数：以下のどちらか
-    * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
-    * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
-  * 返値：deferredオブジェクト
-  * 引数に与えられたdeferredオブジェクトを並列に実行し、結果を待ち合わせます。
-  * 後続のdeferredには結果が順番の保持されたリストとして渡ります。
-  * 引数にalistが渡した場合は、結果もalistで渡ります。この場合は順番は保持されません。
-  * deferred処理の中でエラーが発生した場合は、結果のリストの中にエラーオブジェクトが入ります。
+   * 引数：以下のどちらか
+      * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
+      * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
+   * 返値：deferredオブジェクト
+   * 引数に与えられたdeferredオブジェクトを並列に実行し、結果を待ち合わせます。
+   * 後続のdeferredには結果が順番の保持されたリストとして渡ります。
+   * 引数にalistが渡した場合は、結果もalistで渡ります。この場合は順番は保持されません。
+   * deferred処理の中でエラーが発生した場合は、結果のリストの中にエラーオブジェクトが入ります。
 
 * deferred:earlier (list-or-alist)
-  * 引数：以下のどちらか
-    * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
-    * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
-  * 返値：deferredオブジェクト
-  * 引数に与えられたdeferredオブジェクトを並列に実行し、最初に帰ってきた結果を後続のdeferredに渡します。
-  * 2番目以降の処理はキャンセルされ、結果が帰ってきても無視されます。
-  * 引数にalistを渡した場合は、結果はconsセルで渡ります。
-  * deferred処理の中でエラーが発生した場合は、結果が帰ってこなかったものとして扱われます。
-    * すべての処理がエラーになった場合は、後続のdeferredにnilが渡ります。つまり、エラーバックで処理されません。
+   * 引数：以下のどちらか
+      * 1つ以上のdeferredオブジェクトか引数1つか0個の関数のリスト
+      * 1つ以上のシンボルとdeferredオブジェクトか引数1つか0個の関数によるconsセルのリスト（つまりalist）
+   * 返値：deferredオブジェクト
+   * 引数に与えられたdeferredオブジェクトを並列に実行し、最初に帰ってきた結果を後続のdeferredに渡します。
+   * 2番目以降の処理はキャンセルされ、結果が帰ってきても無視されます。
+   * 引数にalistを渡した場合は、結果はconsセルで渡ります。
+   * deferred処理の中でエラーが発生した場合は、結果が帰ってこなかったものとして扱われます。
+      * すべての処理がエラーになった場合は、後続のdeferredにnilが渡ります。つまり、エラーバックで処理されません。
 
 #### ラッパー ####
 
 元からある処理をdeferredでラップする関数です。
 
 * deferred:call (function args...)
-  * 引数：
-    * function: 関数のシンボル
-    * args: 引数（可変長）
-  * 返値：deferredオブジェクト
-  * オリジナルのfuncallを非同期にした関数です
+   * 引数：
+      * function: 関数のシンボル
+      * args: 引数（可変長）
+   * 返値：deferredオブジェクト
+   * オリジナルのfuncallを非同期にした関数です
 
 * deferred:apply (function args)
-  * 引数：
-    * function: 関数のシンボル
-    * args: 引数（リスト）
-  * 返値：deferredオブジェクト
-  * オリジナルのapplyを非同期にした関数です
+   * 引数：
+      * function: 関数のシンボル
+      * args: 引数（リスト）
+   * 返値：deferredオブジェクト
+   * オリジナルのapplyを非同期にした関数です
 
 * deferred:process (command args...) / deferred:process-shell (command args...)
-  * 引数：
-    * command: 外部実行コマンド
-    * args: コマンドの引数(可変長)
-  * 返値：deferredオブジェクト
-  * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
-  * 外部コマンドのstdoutの結果が文字列として後続のdeferredに渡ります。
+   * 引数：
+      * command: 外部実行コマンド
+      * args: コマンドの引数(可変長)
+   * 返値：deferredオブジェクト
+   * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
+   * 外部コマンドのstdoutの結果が文字列として後続のdeferredに渡ります。
 
 * deferred:process-buffer (command args...) / deferred:process-shell-buffer (command args...)
-  * 引数：
-    * command: 外部実行コマンド
-    * args: コマンドの引数(可変長)
-  * 返値：deferredオブジェクト
-  * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
-  * 外部コマンドのstdoutの結果がバッファとして後続のdeferredに渡ります。
-    * バッファの処分は後続のdeferredに任されます。
+   * 引数：
+      * command: 外部実行コマンド
+      * args: コマンドの引数(可変長)
+   * 返値：deferredオブジェクト
+   * 外部コマンドを非同期で実行します。（start-process, start-process-shell-command のラッパー）
+   * 外部コマンドのstdoutの結果がバッファとして後続のdeferredに渡ります。
+      * バッファの処分は後続のdeferredに任されます。
 
 * deferred:url-retrieve (url [cbargs])
-  * 引数：
-    * url: 取ってきたいURL
-    * cbargs: コールバック引数（オリジナル関数のもの。省略可。）
-  * 返値：deferredオブジェクト
-  * urlパッケージにある、オリジナルのurl-retrieveをdeferredでラップした関数です。
-  * HTTPで取得した結果が、後続のdeferredにバッファで渡ります。
-    * バッファの処分は後続のdeferredに任されます。
+   * 引数：
+      * url: 取ってきたいURL
+      * cbargs: コールバック引数（オリジナル関数のもの。省略可。）
+   * 返値：deferredオブジェクト
+   * urlパッケージにある、オリジナルのurl-retrieveをdeferredでラップした関数です。
+   * HTTPで取得した結果が、後続のdeferredにバッファで渡ります。
+      * バッファの処分は後続のdeferredに任されます。
 
 * （仮）deferred:url-get (url params)
-  * 引数：
-    * url: 取ってきたいURL
-    * params: パラメーターのalist
-  * 返値：deferredオブジェクト
-  * パラメーターを指定しやすくした関数です。仮実装ですので今後仕様が変わる可能性があります。
+   * 引数：
+      * url: 取ってきたいURL
+      * params: パラメーターのalist
+   * 返値：deferredオブジェクト
+   * パラメーターを指定しやすくした関数です。仮実装ですので今後仕様が変わる可能性があります。
 
 * （仮）deferred:url-post (url params)
-  * 引数：
-    * url: 取ってきたいURL
-    * params: パラメーターのalist
-  * 返値：deferredオブジェクト
-  * パラメーターを指定しやすくして、POSTでアクセスする関数です。仮実装ですので今後仕様が変わる可能性があります。
+   * 引数：
+      * url: 取ってきたいURL
+      * params: パラメーターのalist
+   * 返値：deferredオブジェクト
+   * パラメーターを指定しやすくして、POSTでアクセスする関数です。仮実装ですので今後仕様が変わる可能性があります。
 
 #### インスタンスメソッド ####
 
 プリミティブな操作を行う関数です。典型的でないdeferred処理を行いたい場合に、組み合わせて使います。
 
 * deferred:new (callback)
-  * 引数：引数1つか0個の関数
-  * 返値：deferredオブジェクト
-  * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。
-  * 実行キューに入れないため、deferred:callbackやdeferred:errorbackが呼ばれない限り実行されません。
-  * 一時停止して他のイベントを待つような、deferredチェインを作りたいときに使います。 → deferred:wait のソースなどを参考。
+   * 引数：引数1つか0個の関数
+   * 返値：deferredオブジェクト
+   * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。
+   * 実行キューに入れないため、deferred:callbackやdeferred:errorbackが呼ばれない限り実行されません。
+   * 一時停止して他のイベントを待つような、deferredチェインを作りたいときに使います。 → deferred:wait のソースなどを参考。
 
 * deferred:succeed ([value])
-  * 引数：値（省略可）
-  * 返値：deferredオブジェクト
-  * 引数の値を使って、既にコールバックが呼ばれた状態のdeferredを返します。
-  * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
+   * 引数：値（省略可）
+   * 返値：deferredオブジェクト
+   * 引数の値を使って、既にコールバックが呼ばれた状態のdeferredを返します。
+   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
 * deferred:fail ([error])
-  * 引数：値（省略可）
-  * 返値：deferredオブジェクト
-  * 引数の値を使って、既にエラーバックが呼ばれた状態のdeferredを返します。
-  * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
+   * 引数：値（省略可）
+   * 返値：deferredオブジェクト
+   * 引数の値を使って、既にエラーバックが呼ばれた状態のdeferredを返します。
+   * 後続のdeferredは接続されたら直ちに（同期的に）実行されます。
 
 * deferred:callback (d [value])
-  * 引数：
-    * d: deferredオブジェクト
-    * value: 値（省略可）
-  * 返値：deferredオブジェクトか、結果値
-  * 引数のdeferredオブジェクトを同期的に開始します。
-  * ただし、同期的な実行は初回のみで、引数のdeferred以降のdeferredオブジェクトは非同期に実行されます。
+   * 引数：
+      * d: deferredオブジェクト
+      * value: 値（省略可）
+   * 返値：deferredオブジェクトか、結果値
+   * 引数のdeferredオブジェクトを同期的に開始します。
+   * ただし、同期的な実行は初回のみで、引数のdeferred以降のdeferredオブジェクトは非同期に実行されます。
 
 * deferred:callback-post (d [value])
-  * 引数：
-    * d: deferredオブジェクト
-    * value: 値（省略可）
-  * 返値：deferredオブジェクトか、結果値
-  * 引数のdeferredオブジェクトを非同期に開始します。
+   * 引数：
+      * d: deferredオブジェクト
+      * value: 値（省略可）
+   * 返値：deferredオブジェクトか、結果値
+   * 引数のdeferredオブジェクトを非同期に開始します。
 
 * deferred:errorback (d [error])
-  * 引数：
-    * d: deferredオブジェクト
-    * error: 値（省略可）
-  * 返値：deferredオブジェクトか、結果値
-  * 引数のdeferredオブジェクトからエラーバックを同期的に開始します。
+   * 引数：
+      * d: deferredオブジェクト
+      * error: 値（省略可）
+   * 返値：deferredオブジェクトか、結果値
+   * 引数のdeferredオブジェクトからエラーバックを同期的に開始します。
 
 * deferred:errorback-post (d [error])
-  * 引数：
-    * d: deferredオブジェクト
-    * error: 値（省略可）
-  * 返値：deferredオブジェクトか、結果値
-  * 引数のdeferredオブジェクトからエラーバックを非同期に開始します。
+   * 引数：
+      * d: deferredオブジェクト
+      * error: 値（省略可）
+   * 返値：deferredオブジェクトか、結果値
+   * 引数のdeferredオブジェクトからエラーバックを非同期に開始します。
 
 
 ### ユーティリティマクロ ###
@@ -485,35 +485,35 @@ Loop and animation:
 いくつかの便利なマクロを用意しています。マクロですので、スコープや評価順序などに注意して予想外の動作に気をつけてください。
 
 * deferred:try (d &key catch finally)
-  * 引数：
-    * d: deferredオブジェクト
-    * catch: [キーワード引数] dのタスクを実行中にエラーが起きたときに実行される関数。（マクロ展開によって deferred:error の引数に入る）
-    * finally: [キーワード引数] dのタスクが正常・エラーに関わらず終了したあとに実行する関数（マクロ展開によって deferred:watch の引数に入る）
-  * 返値：deferredオブジェクト
-  * 非同期処理で try-catch-finally のような処理を実現するマクロです。所詮非同期なので、メインのdeferredタスクの内容によっては、finallyタスクに処理が回ってこない可能性もあります。
-  * deferred:error と deferred:watch を使って実装しています。
+   * 引数：
+      * d: deferredオブジェクト
+      * catch: [キーワード引数] dのタスクを実行中にエラーが起きたときに実行される関数。（マクロ展開によって deferred:error の引数に入る）
+      * finally: [キーワード引数] dのタスクが正常・エラーに関わらず終了したあとに実行する関数（マクロ展開によって deferred:watch の引数に入る）
+   * 返値：deferredオブジェクト
+   * 非同期処理で try-catch-finally のような処理を実現するマクロです。所詮非同期なので、メインのdeferredタスクの内容によっては、finallyタスクに処理が回ってこない可能性もあります。
+   * deferred:error と deferred:watch を使って実装しています。
 
 * deferred:timeout (msec timeout-form d)
-  * 引数：
-    * msec: 数値
-    * timeout-form: キャンセル時に評価する sexp-form
-    * d: deferredオブジェクト
-  * 返値：deferredオブジェクト
-  * dのタスクを開始してmsecミリ秒経過した場合、dのタスクをキャンセルして、timeout-formの結果を後続のdeferredに渡します。
-  * deferred:earlierとdeferred:waitを使って実装しています。
+   * 引数：
+      * msec: 数値
+      * timeout-form: キャンセル時に評価する sexp-form
+      * d: deferredオブジェクト
+   * 返値：deferredオブジェクト
+   * dのタスクを開始してmsecミリ秒経過した場合、dのタスクをキャンセルして、timeout-formの結果を後続のdeferredに渡します。
+   * deferred:earlierとdeferred:waitを使って実装しています。
 
 * deferred:process〜
-  * deferred:processc (d command args...)
-  * deferred:process-bufferc (d command args...)
-  * deferred:process-shellc (d command args...)
-  * deferred:process-shell-bufferc (d command args...)
-  * 引数：
-    * d: deferredオブジェクト
-    * command: 外部実行コマンド
-    * args: コマンドの引数(可変長)
-  * 返値：deferredオブジェクト
-  * 外部コマンドを非同期で実行するdeferredオブジェクトをdに接続します。
-  * deferred:nextc の lambda の中に元の関数を埋め込んで実装しています。
+   * deferred:processc (d command args...)
+   * deferred:process-bufferc (d command args...)
+   * deferred:process-shellc (d command args...)
+   * deferred:process-shell-bufferc (d command args...)
+   * 引数：
+      * d: deferredオブジェクト
+      * command: 外部実行コマンド
+      * args: コマンドの引数(可変長)
+   * 返値：deferredオブジェクト
+   * 外部コマンドを非同期で実行するdeferredオブジェクトをdに接続します。
+   * deferred:nextc の lambda の中に元の関数を埋め込んで実装しています。
 
 ### 実行・接続 ###
 

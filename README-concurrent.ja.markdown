@@ -4,12 +4,13 @@ concurrent.elは、良くある非同期処理を抽象化したライブラリ�
 
 ## インストール ##
 
-concurrent.elをload-pathに置いてください。
+deferred.el と concurrent.elをload-pathに置いてください。
 
 [auto-install.el](http://d.hatena.ne.jp/rubikitch/20091221/autoinstall "auto-install.el]") を使うことで、以下の式を実行することでインストールできます。
 
 インストール実行:
 
+    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
     (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/concurrent.el")
 
 
@@ -42,7 +43,7 @@ Thread:
     
 whileを使うことでスレッドをループさせることが出来ます。whileの中身は一気に実行されます。
 
-無限ループや重い処理でEmacsが固まらないように注意しましょう。もし無限ループに突入してしまったり、固まってしまったら deferred:clear-queue コマンドで回復できる可能性があります。
+無限ループや重い処理でEmacsが固まらないように注意してください。もし無限ループに突入してしまったり、固まってしまったら deferred:clear-queue コマンドで回復できる可能性があります。
 
 
 ### Generatorの例
@@ -204,201 +205,201 @@ signalやdataflowは、カスケード接続して親子関係を構築できま
 ### Thread
 
 * cc:thread (wait-time-msec &rest body)
-  * 引数：
-    * wait-time-msec: タスク間の間隔（ミリ秒）
-  * 返値：Threadオブジェクト（今のところ使い道無し）
-  * スレッドを作成して開始します
-  * bodyのS式が一つずつ非同期で実行されます。その間隔が wait-time-msec で指定された時間です。
-  * bodyの中に while があった場合は、特別にループとして処理します。
-  * 無限ループや重い処理でEmacsが固まらないように注意してください。もし無限ループに突入してしまったり、固まってしまったら deferred:clear-queue コマンドで回復できる可能性があります。
+   * 引数：
+      * wait-time-msec: タスク間の間隔（ミリ秒）
+   * 返値：Threadオブジェクト（今のところ使い道無し）
+   * スレッドを作成して開始します
+   * bodyのS式が一つずつ非同期で実行されます。その間隔が wait-time-msec で指定された時間です。
+   * bodyの中に while があった場合は、特別にループとして処理します。
+   * 無限ループや重い処理でEmacsが固まらないように注意してください。もし無限ループに突入してしまったり、固まってしまったら deferred:clear-queue コマンドで回復できる可能性があります。
  
 ### Generator
 
 * cc:generator (callback &rest body)
-  * 引数：
-    * callback: yieldした値を受け取る関数
-    * body: Generatorの中身
-  * 返値：Generatorを実行する関数
-  * Threadと同様に、bodyのS式が一つずつ非同期で実行されます。
-  * bodyの中に while があった場合は、特別にループとして処理します。
-  * bodyの内で yield 関数を使う（実際にはマクロで置換されます）と、callbackで指定した関数に値が渡って処理が停止します。
-  * 再度 Generator 関数を実行すると停止した位置から開始します。
+   * 引数：
+      * callback: yieldした値を受け取る関数
+      * body: Generatorの中身
+   * 返値：Generatorを実行する関数
+   * Threadと同様に、bodyのS式が一つずつ非同期で実行されます。
+   * bodyの中に while があった場合は、特別にループとして処理します。
+   * bodyの内で yield 関数を使う（実際にはマクロで置換されます）と、callbackで指定した関数に値が渡って処理が停止します。
+   * 再度 Generator 関数を実行すると停止した位置から開始します。
 
 ### Semaphore
 
 * cc:semaphore-create (permits-num)
-  * 引数：
-    * permits-num: 許可数
-  * 返値：Semaphoreオブジェクト
-  * セマフォオブジェクトを作成します。
+   * 引数：
+      * permits-num: 許可数
+   * 返値：Semaphoreオブジェクト
+   * セマフォオブジェクトを作成します。
 
 * cc:semaphore-acquire (semaphore)
-  * 引数：
-    * semaphore: Semaphoreオブジェクト
-  * 返値：Deferredオブジェクト
-  * 返したDeferredオブジェクトに、実行数を制限したいタスクをつなげます。
-  * 実行する際、許可数を1つ消費します。許可数が0になったら、以降のタスクは待たされます。
-  * 実行可能なら、返したDeferredタスクがすぐに実行されます。
-  * 実行可能でなければ、許可数が戻るまで返したDeferredタスクは待たされます。
+   * 引数：
+      * semaphore: Semaphoreオブジェクト
+   * 返値：Deferredオブジェクト
+   * 返したDeferredオブジェクトに、実行数を制限したいタスクをつなげます。
+   * 実行する際、許可数を1つ消費します。許可数が0になったら、以降のタスクは待たされます。
+   * 実行可能なら、返したDeferredタスクがすぐに実行されます。
+   * 実行可能でなければ、許可数が戻るまで返したDeferredタスクは待たされます。
 
 * cc:semaphore-release (semaphore)
-  * 引数：
-    * semaphore: Semaphoreオブジェクト
-  * 返値：Semaphoreオブジェクト
-  * 許可数を一つ戻します。その際、待っているタスクがあれば実行されます。
-  * 許可数は自動では戻りませんので、 cc:semaphore-release を呼ぶのはプログラマの責任です。
+   * 引数：
+      * semaphore: Semaphoreオブジェクト
+   * 返値：Semaphoreオブジェクト
+   * 許可数を一つ戻します。その際、待っているタスクがあれば実行されます。
+   * 許可数は自動では戻りませんので、 cc:semaphore-release を呼ぶのはプログラマの責任です。
 
 * cc:semaphore-with (semaphore body-func &optional error-func)
-  * 引数：
-    * semaphore: Semaphoreオブジェクト
-    * body-func: 実行数を制御したいタスクの関数
-    * error-func: 発生したエラーを処理する関数（deferred:errorで接続される）
-  * 返値：Deferredオブジェクト
-  * acquireとreleaseを前後で行う関数です。特に理由がない限りは、acquireとreleaseを自分で書くよりも、こちらを使う方が安全で楽です。
+   * 引数：
+      * semaphore: Semaphoreオブジェクト
+      * body-func: 実行数を制御したいタスクの関数
+      * error-func: 発生したエラーを処理する関数（deferred:errorで接続される）
+   * 返値：Deferredオブジェクト
+   * acquireとreleaseを前後で行う関数です。特に理由がない限りは、acquireとreleaseを自分で書くよりも、こちらを使う方が安全で楽です。
 
 
 * cc:semaphore-release-all (semaphore)
-  * 引数：
-    * semaphore: Semaphoreオブジェクト
-  * 返値：実行待ちだったDeferredオブジェクト
-  * 許可数を強制的に初期値に戻します。デバッグ時や状態をリセットしたいときに使います。
+   * 引数：
+      * semaphore: Semaphoreオブジェクト
+   * 返値：実行待ちだったDeferredオブジェクト
+   * 許可数を強制的に初期値に戻します。デバッグ時や状態をリセットしたいときに使います。
 
 * cc:semaphore-interrupt-all (semaphore)
-  * 引数：
-    * semaphore: Semaphoreオブジェクト
-  * 返値：Deferredオブジェクト
-  * 実行待ちのタスクがなければ、すぐに実行するDeferredオブジェクトを返します。
-  * 現在実行待ちのタスクがあれば取り除いて、現在実行中のタスクの次に実行されるDeferredオブジェクトを返します。
-  * 割り込みしたいときに使います。
+   * 引数：
+      * semaphore: Semaphoreオブジェクト
+   * 返値：Deferredオブジェクト
+   * 実行待ちのタスクがなければ、すぐに実行するDeferredオブジェクトを返します。
+   * 現在実行待ちのタスクがあれば取り除いて、現在実行中のタスクの次に実行されるDeferredオブジェクトを返します。
+   * 割り込みしたいときに使います。
 
 ### Signal
 
 * cc:signal-channel (&optional name parent-channel)
-  * 引数：
-    * name: このチャンネルの名前。主にデバッグ用。
-    * parent-channel: 上流のチャンネルオブジェクト。
-  * 返値：チャンネルオブジェクト
-  * 新しいチャンネルを作成します。
-  * 上流のシグナルは下流に流れてきますが、下流から上流には cc:signal-send-global を使わない限り流れません。
+   * 引数：
+      * name: このチャンネルの名前。主にデバッグ用。
+      * parent-channel: 上流のチャンネルオブジェクト。
+   * 返値：チャンネルオブジェクト
+   * 新しいチャンネルを作成します。
+   * 上流のシグナルは下流に流れてきますが、下流から上流には cc:signal-send-global を使わない限り流れません。
 
 * cc:signal-connect (channel event-sym &optional callback)
-  * 引数：
-    * channel: チャンネルオブジェクト
-    * event-sym: イベント識別シンボル
-    * callback: 受け取り関数
-  * 返値：Deferredオブジェクト
-  * シグナルを受信するタスクを追加します。
-  * event-sym が t の場合は、すべてのシグナルを受信します。
-  * 通常はこの関数の返値にシグナルを受信する非同期タスクを接続します。
+   * 引数：
+      * channel: チャンネルオブジェクト
+      * event-sym: イベント識別シンボル
+      * callback: 受け取り関数
+   * 返値：Deferredオブジェクト
+   * シグナルを受信するタスクを追加します。
+   * event-sym が t の場合は、すべてのシグナルを受信します。
+   * 通常はこの関数の返値にシグナルを受信する非同期タスクを接続します。
 
 * cc:signal-send (channel event-sym &rest args)
-  * 引数：
-    * channel: チャンネルオブジェクト
-    * event-sym: イベント識別シンボル
-    * args: イベント引数
-  * 返値：なし
-  * シグナルを発信します。
-  * args は、受信側で (lambda (event) (destructuring-bind (event-sym (args)) event ... )) のようにすると受け取れます。
+   * 引数：
+      * channel: チャンネルオブジェクト
+      * event-sym: イベント識別シンボル
+      * args: イベント引数
+   * 返値：なし
+   * シグナルを発信します。
+   * args は、受信側で (lambda (event) (destructuring-bind (event-sym (args)) event ... )) のようにすると受け取れます。
 
 
 * cc:signal-send-global (channel event-sym &rest args)
-  * 引数：
-    * channel: チャンネルオブジェクト
-    * event-sym: イベント識別シンボル
-    * args: イベント引数
-  * 返値：なし
-  * 上流のチャンネルにシグナルを送信します。
+   * 引数：
+      * channel: チャンネルオブジェクト
+      * event-sym: イベント識別シンボル
+      * args: イベント引数
+   * 返値：なし
+   * 上流のチャンネルにシグナルを送信します。
 
 * cc:signal-disconnect (channel deferred)
-  * 引数：
-    * channel: チャンネルオブジェクト
-    * deferred: チャンネルから取り除きたいDeferredオブジェクト
-  * 返値：削除されたDeferredオブジェクト
-  * チャンネルから受信タスクを取り除きます。
+   * 引数：
+      * channel: チャンネルオブジェクト
+      * deferred: チャンネルから取り除きたいDeferredオブジェクト
+   * 返値：削除されたDeferredオブジェクト
+   * チャンネルから受信タスクを取り除きます。
 
 * cc:signal-disconnect-all (channel)
-  * 引数：
-    * channel: チャンネルオブジェクト
-  * 返値：なし
-  * すべての受信タスクを取り除きます。
+   * 引数：
+      * channel: チャンネルオブジェクト
+   * 返値：なし
+   * すべての受信タスクを取り除きます。
 
 ### Dataflow
 
 * cc:dataflow-environment (&optional parent-env test-func channel)
-  * 引数：
-    * parent-env: デフォルト値として使うDataflowオブジェクト
-    * test-func: keyの比較関数
-    * channel: チャンネルオブジェクト
-  * 返値：Dataflowオブジェクト
-  * 新しくDataflowオブジェクトを作成して返します。
-  * channelは引数で与えなかった場合は、内部新しいチャンネルオブジェクトを作成します。
-  * 以下のシグナルがチャンネルに送信されます
-    * get-first : 初回未バインド変数を参照したとき
-    * get-waiting : 2回目以降の未バインド変数を参照したとき
-    * set : 値をバインドしたとき
-    * get : バインドされた値を参照したとき
-    * clear : バインド解除されたとき
-    * clear-all : すべてのバインドが解除されたとき
+   * 引数：
+      * parent-env: デフォルト値として使うDataflowオブジェクト
+      * test-func: keyの比較関数
+      * channel: チャンネルオブジェクト
+   * 返値：Dataflowオブジェクト
+   * 新しくDataflowオブジェクトを作成して返します。
+   * channelは引数で与えなかった場合は、内部新しいチャンネルオブジェクトを作成します。
+   * 以下のシグナルがチャンネルに送信されます
+      * get-first : 初回未バインド変数を参照したとき
+      * get-waiting : 2回目以降の未バインド変数を参照したとき
+      * set : 値をバインドしたとき
+      * get : バインドされた値を参照したとき
+      * clear : バインド解除されたとき
+      * clear-all : すべてのバインドが解除されたとき
 
 * cc:dataflow-get (df key)
-  * 引数：
-    * df: Dataflowオブジェクト
-    * key: 変数キー
-  * 返値：変数の値を受け取るDeferredオブジェクト
-  * 変数の値を受け取るDeferredタスクを返すので、変数の値を使う処理を接続します。
-  * 変数の値がバインドされていれば、直ちに実行されます。
-  * 変数の値がバインドされていなければ、返されたDeferredタスクはバインドされるまで実行されません。
+   * 引数：
+      * df: Dataflowオブジェクト
+      * key: 変数キー
+   * 返値：変数の値を受け取るDeferredオブジェクト
+   * 変数の値を受け取るDeferredタスクを返すので、変数の値を使う処理を接続します。
+   * 変数の値がバインドされていれば、直ちに実行されます。
+   * 変数の値がバインドされていなければ、返されたDeferredタスクはバインドされるまで実行されません。
 
 * cc:dataflow-get-sync (df key)
-  * 引数：
-    * df: Dataflowオブジェクト
-    * key: 変数キー
-  * 返値：nil か値
-  * 変数の値を同期的に参照します。
-  * 値がバインドされていなければ nil を返します。
+   * 引数：
+      * df: Dataflowオブジェクト
+      * key: 変数キー
+   * 返値：nil か値
+   * 変数の値を同期的に参照します。
+   * 値がバインドされていなければ nil を返します。
 
 * cc:dataflow-set (df key value)
-  * 引数：
-    * df: Dataflowオブジェクト
-    * key: 変数キー
-    * value: 値
-  * 返値：なし
-  * 変数に値をバインドします。
-  * もし、すでにバインドされている変数にバインドしようとした場合はエラーが発生します。
+   * 引数：
+      * df: Dataflowオブジェクト
+      * key: 変数キー
+      * value: 値
+   * 返値：なし
+   * 変数に値をバインドします。
+   * もし、すでにバインドされている変数にバインドしようとした場合はエラーが発生します。
 
 * cc:dataflow-clear (df key)
-  * 引数：
-    * df: Dataflowオブジェクト
-    * key: 変数キー
-  * 返値：なし
-  * 変数を未バインドに戻します。
+   * 引数：
+      * df: Dataflowオブジェクト
+      * key: 変数キー
+   * 返値：なし
+   * 変数を未バインドに戻します。
 
 * cc:dataflow-get-avalable-pairs (df)
-  * 引数：
-    * df: Dataflowオブジェクト
-  * 返値：バインドされている変数キーと値の alist
+   * 引数：
+      * df: Dataflowオブジェクト
+   * 返値：バインドされている変数キーと値の alist
 
 * cc:dataflow-get-waiting-keys (df)
-  * 引数：
-    * df: Dataflowオブジェクト
-  * 返値：未バインドで、受け取り待ちのタスクが存在する変数キーのリスト
+   * 引数：
+      * df: Dataflowオブジェクト
+   * 返値：未バインドで、受け取り待ちのタスクが存在する変数キーのリスト
 
 * cc:dataflow-clear-all (df)
-  * 引数：
-    * df: Dataflowオブジェクト
-  * 返値：なし
-  * 指定されたDataflowオブジェクトを空にします。
-  * 受け取り待ちのタスクについては何もしません。
+   * 引数：
+      * df: Dataflowオブジェクト
+   * 返値：なし
+   * 指定されたDataflowオブジェクトを空にします。
+   * 受け取り待ちのタスクについては何もしません。
 
 * cc:dataflow-connect (df event-sym &optional callback)
-  * 引数：
-    * df: Dataflowオブジェクト
-    * event-sym: イベント識別シンボル
-    * callback: 受け取り関数
-  * 返値：Deferredオブジェクト
-  * このDataflowオブジェクトのチャンネルにシグナル受け取りタスクを追加します。
-  * 内部で cc:signal-connect を呼びます。
-  * 受け取れるイベント識別シンボルについては、 cc:dataflow-environment を参照してください。
+   * 引数：
+      * df: Dataflowオブジェクト
+      * event-sym: イベント識別シンボル
+      * callback: 受け取り関数
+   * 返値：Deferredオブジェクト
+   * このDataflowオブジェクトのチャンネルにシグナル受け取りタスクを追加します。
+   * 内部で cc:signal-connect を呼びます。
+   * 受け取れるイベント識別シンボルについては、 cc:dataflow-environment を参照してください。
 
 
 * * * * *
