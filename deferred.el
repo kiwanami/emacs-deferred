@@ -20,10 +20,12 @@
 
 ;;; Commentary:
 
-;; 'deferred.el' is a simple library for asynchronous tasks.  The API
-;; is almost the same as JSDeferred written by cho45. See the
+;; 'deferred.el' is a simple library for asynchronous tasks.
+;; [https://github.com/kiwanami/emacs-deferred]
+
+;; The API is almost the same as JSDeferred written by cho45. See the
 ;; JSDeferred and Mochikit.Async web sites for further documentations.
-;; [http://github.com/cho45/jsdeferred]
+;; [https://github.com/cho45/jsdeferred]
 ;; [http://mochikit.com/doc/html/MochiKit/Async.html]
 
 ;; A good introduction document (JavaScript)
@@ -56,7 +58,7 @@
 ;; ** Applications
 
 ;; *Inertial scrolling for Emacs
-;; [http://github.com/kiwanami/emacs-inertial-scroll]
+;; [https://github.com/kiwanami/emacs-inertial-scroll]
 
 ;; This program makes simple multi-thread function, using
 ;; deferred.el.

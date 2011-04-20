@@ -1,6 +1,6 @@
 ;;; concurrent.el --- Concurrent utility functions for emacs lisp
 
-;; Copyright (C) 2010  SAKURAI Masashi
+;; Copyright (C) 2010, 2011  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <sakurai at kiwanami.net>
 ;; Keywords: deferred, async, concurrent
@@ -35,7 +35,7 @@
 (require 'deferred)
 
 (defvar cc:version nil "version number")
-(setq cc:version "0.1")
+(setq cc:version "0.1.1")
 
 ;;; Code:
 
@@ -51,6 +51,7 @@
 ;; Generator 
 
 (defun cc:generator-replace-yield (tree)
+  "[internal] Replace `yield' symbols to calling a function in TREE."
   (let (ret)
     (loop for i in tree
           do (cond
@@ -64,6 +65,8 @@
     (nreverse ret)))
 
 (defun cc:generator-line (line)
+  "[internal] Return a macro expansion to execute the sexp LINE
+asynchronously."
   (cond
    ;; function object
    ((functionp line)
@@ -86,6 +89,8 @@
              (deferred:lambda (x) ,(cc:generator-replace-yield line)))))))
 
 (defmacro cc:generator (callback &rest body)
+  "Create a generator object. If BODY has `yield' symbols, it
+means calling callback function CALLBACK."
   (let ((chain (gensym))
         (cc (gensym))
         (waiter (gensym)))
@@ -106,6 +111,9 @@
 ;; Thread
 
 (defun cc:thread-line (wait-time chain line)
+  "[internal] Return a macro expansion to execute the sexp LINE asynchronously.
+WAIT-TIME is an interval time between tasks.
+CHAIN is the previous deferred task."
   (cond
    ;; function object
    ((functionp line)
@@ -130,7 +138,8 @@
            (deferred:nextc ,chain 
              (lambda (x) ,line))))))
 
-(defmacro cc:thread (wait-time &rest body)
+(defmacro cc:thread (wait-time-msec &rest body)
+  "Return a thread object."
   (let ((chain (gensym))
         (dstart (gensym)))
     `(lexical-let*
@@ -139,7 +148,7 @@
        (setq ,chain ,dstart)
        ,@(loop for i in body
                collect
-               (cc:thread-line wait-time chain i))
+               (cc:thread-line wait-time-msec chain i))
        (deferred:callback ,dstart))))
 
 
@@ -150,9 +159,15 @@
 (defstruct cc:semaphore max-permits permits waiting-deferreds)
 
 (defun cc:semaphore-create(permits-num)
+  "Return a semaphore object with PERMITS-NUM permissions."
   (make-cc:semaphore :max-permits permits-num :permits permits-num))
 
 (defun cc:semaphore-acquire(semaphore)
+  "Acquire an execution permission and return deferred object to chain.
+If this semaphore object has permissions, the subsequent deferred
+task is executed immediately.  If this semaphore object has no
+permissions, the subsequent deferred task is blocked. After the
+permission is returned, the task is executed."
   (cond
    ((< 0 (cc:semaphore-permits semaphore))
     (decf (cc:semaphore-permits semaphore))
@@ -163,6 +178,7 @@
       d))))
 
 (defun cc:semaphore-release(semaphore)
+  "Release an execution permission. The programmer is responsible to return the permissions."
   (when (<= (cc:semaphore-max-permits semaphore) 
             (cc:semaphore-permits semaphore))
     (error "Too many calling semaphore-release. [max:%s <= permits:%s]" 
@@ -181,6 +197,7 @@
   semaphore)
 
 (defun cc:semaphore-with (semaphore body-func &optional error-func)
+  "Execute the task BODY-FUNC asynchronously with the semaphore block."
   (lexical-let ((semaphore semaphore))
     (deferred:try
       (deferred:nextc (cc:semaphore-acquire semaphore) body-func)
@@ -191,6 +208,10 @@
 (put 'cc:semaphore-with 'lisp-indent-function 1)
 
 (defun cc:semaphore-release-all (semaphore)
+  "Release all permissions for resetting the semaphore object.
+If the semaphore object has some blocked tasks, this function
+return a list of the tasks and clear the list of the blocked
+tasks in the semaphore object."
   (setf (cc:semaphore-permits semaphore)
         (cc:semaphore-max-permits semaphore))
   (let ((ds (cc:semaphore-waiting-deferreds semaphore)))
@@ -199,6 +220,8 @@
     ds))
 
 (defun cc:semaphore-interrupt-all (semaphore)
+  "Clear the list of the blocked tasks in the semaphore and return a deferred object to chain.
+This function is used for the interruption cases."
   (when (cc:semaphore-waiting-deferreds semaphore)
     (setf (cc:semaphore-waiting-deferreds semaphore) nil)
     (setf (cc:semaphore-permits semaphore) 0))
@@ -210,6 +233,10 @@
 ;; Signal / Channel
 
 (defun cc:signal-channel (&optional name parent-channel)
+  "Create a channel. 
+NAME is a channel name for debug.
+PARENT-CHANNEL is a upstream channel. The observers of this channel can receive the upstream signals. 
+In the case of using the function `cc:signal-send', the observers of the upstream channel can not receive the signals of this channel. The function `cc:signal-send-global' can send a signal to the upstream channels from the downstream channels."
   (lexical-let
       ((ch (cons
             (or name (format "signal%s" (deferred:uid))) ; name for debug
@@ -227,15 +254,23 @@
     ch))
        
 (defmacro cc:signal-name (ch)
+  "[internal] Return signal name."
   `(car ,ch))
 
 (defmacro cc:signal-parent-channel (ch)
+  "[internal] Return parent channel object."
   `(cadr ,ch))
 
 (defmacro cc:signal-observers (ch)
+  "[internal] Return observers."
   `(cddr ,ch))
 
 (defun cc:signal-connect (channel event-sym &optional callback)
+  "Append an observer for EVENT-SYM of CHANNEL and return a deferred object.
+If EVENT-SYM is `t', the observer receives all signals of the channel.
+If CALLBACK function is given, the deferred object executes the
+CALLBACK function asynchronously. One can connect subsequent
+tasks to the returned deferred object."
   (let ((d (if callback
                (deferred:new callback) 
              (deferred:new))))
@@ -244,6 +279,7 @@
     d))
 
 (defun cc:signal-send (channel event-sym &rest args)
+  "Send a signal to CHANNEL. If ARGS values are given, observers can get the values by following code: (lambda (event) (destructuring-bind (event-sym (args)) event ... )). "
   (let ((observers (cc:signal-observers channel))
         (event (list event-sym args)))
     (loop for i in observers
@@ -253,12 +289,15 @@
           do (deferred:callback-post d event))))
 
 (defun cc:signal-send-global (channel event-sym &rest args)
+  "Send a signal to the most upstream channel. "
   (cc:aif (cc:signal-parent-channel channel)
       (apply 'cc:signal-send-global it event-sym args)
     (apply 'cc:signal-send channel event-sym args)))
 
 
 (defun cc:signal-disconnect (channel deferred)
+  "Remove the observer object DEFERRED from CHANNEL and return
+the removed deferred object. "
   (let ((observers (cc:signal-observers channel)) deleted)
     (setf 
      (cc:signal-observers channel) ; place
@@ -271,6 +310,7 @@
     deleted))
 
 (defun cc:signal-disconnect-all (channel)
+  "Remove all observers."
   (setf 
    (cc:signal-observers channel) ; place
    nil))
@@ -281,12 +321,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Dataflow
 
+;; Dataflow variable entry
 (defstruct cc:dataflow key (value 'cc:dataflow-undefine) deferred-list)
 
 (defun cc:dataflow-undefine-p (obj)
+  "[internal] If the variable entry is not bound, return `t'."
   (eq 'cc:dataflow-undefine (cc:dataflow-value obj)))
 
 (defun cc:dataflow-environment (&optional parent-env test-func channel)
+  "Create a dataflow environment.
+PARENT-ENV is the default environment. If this environment doesn't have the entry A and the parent one has the entry A, this environment can return the entry A. One can override the entry, setting another entry A to this environment.
+TEST-FUNC is a test function that compares the entry keys. The default function is `equal'.
+CHANNEL is a channel object that sends signals of variable events. Observers can receive following signals:
+-get-first : the fist referrer is waiting for binding,
+-get-waiting : another referrer is waiting for binding,
+-set : a value is bound,
+-get : returned a bound value,
+-clear : cleared one entry,
+-clear-all : cleared all entries.
+"
   (let ((this (list parent-env
                     (or test-func 'equal)
                     (or channel 
@@ -298,7 +351,7 @@
     this))
 
 (defun cc:dataflow-init-connect (df)
-  "[internal]"
+  "[internal] Initialize the channel object."
   (lexical-let ((df df))
     (cc:dataflow-connect 
      df 'set
@@ -313,23 +366,24 @@
              (setf (cc:dataflow-deferred-list obj) nil))))))))
 
 (defmacro cc:dataflow-parent-environment (df)
-  "[internal]"
+  "[internal] Return the parent environment."
   `(car ,df))
 
 (defmacro cc:dataflow-test (df)
-  "[internal]"
+  "[internal] Return the test function."
   `(cadr ,df))
 
 (defmacro cc:dataflow-channel (df)
-  "[internal]"
+  "[internal] Return the channel object."
   `(caddr ,df))
 
 (defmacro cc:dataflow-list (df)
-  "[internal]"
+  "[internal] Return the list of deferred object which are waiting for value binding."
   `(cdddr ,df))
 
 (defun cc:dataflow-get-object-for-value (df key)
-  "[internal]"
+  "[internal] Return an entry object that is indicated by KEY.
+If the environment DF doesn't have the entry and the parent one has the entry, this function returns the entry of the parent environment. This function doesn't affect the waiting list."
   (or
    (loop for i in (cc:dataflow-list df)
          with test = (cc:dataflow-test df)
@@ -341,19 +395,26 @@
      (cc:dataflow-get-object-for-value it key))))
 
 (defun cc:dataflow-get-object-for-deferreds (df key)
-  "[internal]"
+  "[internal] Return a list of the deferred objects those are waiting for value binding.
+This function doesn't affect the waiting list and doesn't refer the parent environment."
   (loop for i in (cc:dataflow-list df)
         with test = (cc:dataflow-test df)
         if (funcall test key (cc:dataflow-key i))
         return i))
 
 (defun cc:dataflow-connect (df event-sym &optional callback)
+  "Append an observer for EVENT-SYM of the channel of DF and return a deferred object.
+See the docstring of `cc:dataflow-environment' for details."
   (cc:signal-connect (cc:dataflow-channel df) event-sym callback))
 
 (defun cc:dataflow-signal (df event &optional arg)
+  "[internal] Send a signal to the channel of DF."
   (cc:signal-send (cc:dataflow-channel df) event arg))
 
 (defun cc:dataflow-get (df key)
+  "Return a deferred object that can refer the value which is indicated by KEY.
+If DF has the entry that bound value, the subsequent deferred task is executed immediately.
+If not, the task is deferred till a value is bound."
   (let ((obj (cc:dataflow-get-object-for-value df key)))
     (cond
      ((and obj (cc:dataflow-value obj))
@@ -371,10 +432,15 @@
         d)))))
 
 (defun cc:dataflow-get-sync (df key)
+  "Return the value which is indicated by KEY synchronously.
+If the environment DF doesn't have an entry of KEY, this function returns nil."
   (let ((obj (cc:dataflow-get-object-for-value df key)))
     (and obj (cc:dataflow-value obj))))
 
 (defun cc:dataflow-set (df key value)
+  "Bind the VALUE to KEY in the environment DF.
+If DF already has the bound entry of KEY, this function throws an error signal.
+VALUE can be nil as a value."
   (let ((obj (cc:dataflow-get-object-for-deferreds df key)))
     (cond
      ((and obj (not (cc:dataflow-undefine-p obj)))
@@ -391,6 +457,8 @@
     value))
 
 (defun cc:dataflow-clear (df key)
+  "Clear the entry which is indicated by KEY.
+This function does nothing for the waiting deferred objects."
   (cc:dataflow-signal df 'clear key)
   (setf (cc:dataflow-list df) 
         (loop for i in (cc:dataflow-list df)
@@ -399,6 +467,7 @@
               collect i)))
 
 (defun cc:dataflow-get-avalable-pairs (df)
+  "Return an available key-value alist in the environment DF and the parent ones."
   (append
    (loop for i in (cc:dataflow-list df)
          for key = (cc:dataflow-key i)
@@ -409,6 +478,7 @@
      (cc:dataflow-get-avalable-pairs it))))
 
 (defun cc:dataflow-get-waiting-keys (df)
+  "Return a list of keys which have waiting deferred objects in the environment DF and the parent ones."
   (append
    (loop for i in (cc:dataflow-list df)
          for key = (cc:dataflow-key i)
@@ -419,6 +489,8 @@
      (cc:dataflow-get-waiting-keys it))))
 
 (defun cc:dataflow-clear-all (df)
+  "Clear all entries in the environment DF. 
+This function does nothing for the waiting deferred objects."
   (cc:dataflow-signal df 'clear-all)
   (setf (cc:dataflow-list df) nil))
 
