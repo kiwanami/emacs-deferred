@@ -10,7 +10,7 @@ The API and implementations were translated from
 
 Put 'deferred.el' into your 'load-path'.
 
-If you have [auto-install.el](http://d.hatena.ne.jp/rubikitch/20091221/autoinstall "auto-install.el]"), evaluating a following s-expression, you can install immediately.
+If you have [auto-install.el](http://www.emacswiki.org/emacs/auto-install.el "auto-install.el]"), evaluating a following s-expression, you can install immediately.
 
 Install by auto-install:
 

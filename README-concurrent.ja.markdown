@@ -19,7 +19,7 @@ deferred.el と concurrent.elをload-pathに置いてください。
 以下のサンプルで例示したソースは concurrent-samples.el の中にあります。
 eval-last-sexp (C-x C-e) などで実行してみてください。
 
-### Theadの例
+### Threadの例
 
 lexical-letを評価するとその場でアニメーションします。引数の時間は、bodyの処理の間隔です。
 

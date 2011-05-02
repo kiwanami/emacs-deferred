@@ -235,7 +235,7 @@ This function is used for the interruption cases."
 (defun cc:signal-channel (&optional name parent-channel)
   "Create a channel. 
 NAME is a channel name for debug.
-PARENT-CHANNEL is a upstream channel. The observers of this channel can receive the upstream signals. 
+PARENT-CHANNEL is an upstream channel. The observers of this channel can receive the upstream signals. 
 In the case of using the function `cc:signal-send', the observers of the upstream channel can not receive the signals of this channel. The function `cc:signal-send-global' can send a signal to the upstream channels from the downstream channels."
   (lexical-let
       ((ch (cons
