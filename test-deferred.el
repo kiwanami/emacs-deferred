@@ -110,6 +110,10 @@
   (when (deferred-p id)
     (deferred:cancel id)))
 
+(defun deferred:run-with-idle-timer (sec f)
+  "overrided for test"
+  (deferred:call f))
+
 
 
 (dont-compile
@@ -388,6 +392,30 @@
               (wait 1000)
               (cancelc it)
               (nextc it (deferred:not-called-func "wait cancel"))))
+
+     (desc "> wait-idle")
+     (expect "wait-idle ok"
+             ;; basic wait test
+             (dtest
+              (deferred:wait-idle 1)
+              (nextc it (if (< x 300) "wait-idle ok" x))
+              (errorf it "Error on simple wait-idle : %s")))
+
+     (expect "wait-idlec ok"
+             ;; wait chain test
+             (dtest
+              (deferred:wait-idle 1)
+              (nextc it "wait")
+              (nextc it (deferred:wait-idle 1))
+              (nextc it (if (< x 300) "wait-idlec ok" x))
+              (errorf it "Error on simple wait-idle chain : %s")))
+
+     (expect nil
+             ;; wait cancel test
+             (dtest
+              (deferred:wait-idle 1000)
+              (cancelc it)
+              (nextc it (deferred:not-called-func "wait-idle cancel"))))
 
      (expect "sync connect1"
              ;; real time connection1

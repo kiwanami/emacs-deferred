@@ -415,6 +415,14 @@ Loop and animation:
    * The subsequent deferred task receives the stdout from the command as a buffer.
       * The following tasks are responsible to kill the buffer.
 
+* deferred:wait-idle (msec)
+   * Arguments
+      * msec: a number (millisecond)
+   * Return
+      * a deferred object
+   * Return a deferred object that will be called when Emacs has been idle for the specified millisecond.
+   * The subsequent deferred task receives the elapse time in millisecond.
+
 * deferred:url-retrieve (url [cbargs])
    * Arguments
       * url: URL to get

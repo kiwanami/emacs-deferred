@@ -404,6 +404,13 @@ Loop and animation:
    * 外部コマンドのstdoutの結果がバッファとして後続のdeferredに渡ります。
       * バッファの処分は後続のdeferredに任されます。
 
+* deferred:wait-idle (msec)
+   * 引数：
+      * msec: 数値
+   * 返値：deferredオブジェクト
+   * 引数で指定されたミリ秒間Emacsがアイドル状態だったときに、後続のdeferredオブジェクトを実行します。
+   * 後続のdeferredオブジェクトのコールバック関数の引数には、この関数が呼ばれてから経過した時間がミリ秒で渡ってきます。
+
 * deferred:url-retrieve (url [cbargs])
    * 引数：
       * url: 取ってきたいURL

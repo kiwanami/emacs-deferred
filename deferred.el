@@ -104,6 +104,10 @@
   "[internal] Timer cancellation function that emulates the `cancelTimeout' function in JS."
   (cancel-timer id))
 
+(defun deferred:run-with-idle-timer (sec f)
+  "[internal] Wrapper function for run-with-idle-timer."
+  (run-with-idle-timer sec nil f))
+
 (defun deferred:call-lambda (f &optional arg)
   "[internal] Call a function with one or zero argument safely.
 The lambda function can define with zero and one argument."
@@ -456,6 +460,25 @@ monitoring of tasks."
                     nil) msec))
     (setf (deferred-cancel d) 
           (lambda (x) 
+            (deferred:cancelTimeout timer)
+            (deferred:default-cancel x)))
+    d))
+
+(defun deferred:wait-idle (msec)
+  "Return a deferred object which will run when Emacs has been
+idle for MSEC millisecond."
+  (lexical-let 
+      ((d (deferred:new)) (start-time (float-time)) timer)
+    (deferred:message "WAIT-IDLE : %s" msec)
+    (setq timer 
+          (deferred:run-with-idle-timer 
+            (/ msec 1000.0) 
+            (lambda ()
+              (deferred:exec-task d 'ok 
+                (* 1000.0 (- (float-time) start-time)))
+              nil)))
+    (setf (deferred-cancel d)
+          (lambda (x)
             (deferred:cancelTimeout timer)
             (deferred:default-cancel x)))
     d))
