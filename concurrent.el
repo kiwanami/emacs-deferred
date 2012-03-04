@@ -1,8 +1,9 @@
 ;;; concurrent.el --- Concurrent utility functions for emacs lisp
 
-;; Copyright (C) 2010, 2011  SAKURAI Masashi
+;; Copyright (C) 2010, 2011, 2012  SAKURAI Masashi
 
-;; Author: SAKURAI Masashi <sakurai at kiwanami.net>
+;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
+;; Version: 0.3
 ;; Keywords: deferred, async, concurrent
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -35,7 +36,7 @@
 (require 'deferred)
 
 (defvar cc:version nil "version number")
-(setq cc:version "0.1.1")
+(setq cc:version "0.3")
 
 ;;; Code:
 
@@ -150,6 +151,7 @@ CHAIN is the previous deferred task."
                collect
                (cc:thread-line wait-time-msec chain i))
        (deferred:callback ,dstart))))
+(put 'cc:thread 'lisp-indent-function 1)
 
 
 

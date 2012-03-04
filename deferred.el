@@ -1,8 +1,9 @@
 ;;; deferred.el --- Simple asynchronous functions for emacs lisp
 
-;; Copyright (C) 2010, 2011  SAKURAI Masashi
+;; Copyright (C) 2010, 2011, 2012  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
+;; Version: 0.3
 ;; Keywords: deferred, async
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -67,7 +68,7 @@
   (require 'cl))
 
 (defvar deferred:version nil "deferred.el version")
-(setq deferred:version "0.2")
+(setq deferred:version "0.3")
 
 ;;; Code:
 
