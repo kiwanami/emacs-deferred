@@ -3,8 +3,9 @@
 ;; Copyright (C) 2010, 2011, 2012  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
-;; Version: 0.3
+;; Version: 0.3.1
 ;; Keywords: deferred, async
+;; URL: https://github.com/kiwanami/emacs-deferred
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
