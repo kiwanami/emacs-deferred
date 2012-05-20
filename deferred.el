@@ -79,6 +79,7 @@
   `(let ((it ,test))
      (if it ,(if rest `(deferred:aand ,@rest) 'it))))
 
+;;;###autoload
 (defmacro deferred:$ (&rest elements)
   "Anaphoric function chain macro for deferred chains."
   (declare (debug (&rest form)))
