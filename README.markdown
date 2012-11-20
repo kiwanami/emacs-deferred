@@ -275,6 +275,33 @@ Loop and animation:
 
 * 'deferred:lambda' is an anaphoric macro in which 'self' refers itself. It is convenient to construct a recursive structure.
 
+### Wrapping asynchronous function ###
+
+Let's say you have an asynchronous function which takes a callback.  For example, dbus.el, xml-rpc.el and websocket.el has such kind of asynchronous APIs.  To use such libraries with deferred.el, you can make an unregistered deferred object using `deferred:new` and then start the deferred callback queue using `deferred:callback-post` in the callback given to the asynchronous function.  If the asynchronous function supports "errorback", you can use `deferred:errorback-post` to pass the error information to the following callback queue.
+
+In the following example, `run-at-time` is used as an example for the asynchronous function.  Deferred.el already has `deferred:wait` for this purpose so that you don't need the following code if you want to use `run-at-time`.
+
+    (deferred:$
+      (deferred:next
+        (lambda ()
+          (message "1")
+          1))
+      (deferred:nextc it
+        (lambda (x)
+          (lexical-let ((d (deferred:new #'identity)))
+            (run-at-time 0 nil (lambda (x)
+                                 ;; Start the following callback queue now.
+                                 (deferred:callback-post d x))
+                         x)
+            ;; Return the unregistered (not yet started) callback
+            ;; queue, so that the following queue will wait until it
+            ;; is started.
+            d)))
+      ;; You can connect deferred callback queues
+      (deferred:nextc it
+        (lambda (x)
+          (message "%s" (1+ x)))))
+
 ## API ##
 
 ### Functions ###
