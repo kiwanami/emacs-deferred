@@ -780,12 +780,13 @@ process."
         ((f f) (command command) (args args)
          (proc-name (format "*deferred:*%s*:%s" command uid))
          (buf-name (format " *deferred:*%s*:%s" command uid))
+         (pwd default-directory)
          (nd (deferred:new)) proc-buf proc)
       (deferred:nextc d
         (lambda (x)
           (setq proc-buf (get-buffer-create buf-name))
           (condition-case err
-              (progn
+              (let ((default-directory pwd))
                 (setq proc
                       (if (null (car args))
                           (apply f proc-name buf-name command nil)
