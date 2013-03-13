@@ -115,7 +115,12 @@
 The lambda function can define with zero and one argument."
   (condition-case err
       (funcall f arg)
-    ('wrong-number-of-arguments 
+    ('wrong-number-of-arguments
+     (display-warning 'deferred "\
+Callback that takes no argument may be specified.
+Passing callback with no argument is deprecated.
+Callback must take one argument.
+Or, this error is coming from somewhere inside of the callback: %S" err)
      (condition-case err2 
          (funcall f)
        ('wrong-number-of-arguments
