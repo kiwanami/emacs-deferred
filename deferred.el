@@ -219,11 +219,6 @@ an argument value for execution of the deferred task."
   (deferred:message "QUEUE-CLEAR [%s -> 0]" (length deferred:queue))
   (setq deferred:queue nil))
 
-(defun deferred:esc-msg (msg)
-  "[internal] Escaping the character '%'."
-  (replace-regexp-in-string
-   "\\([^%]\\|^\\)%\\([^%]\\)" "\\1%%\\2" msg))
-
 (defun deferred:worker ()
   "[internal] Consume a deferred task. 
 Mainly this function is called by timer asynchronously."
@@ -279,13 +274,12 @@ Mainly this function is called by timer asynchronously."
   "[internal] Default callback function."
   (identity i))
 
-(defun deferred:default-errorback (error-msg)
+(defun deferred:default-errorback (err)
   "[internal] Default errorback function."
-  (error (deferred:esc-msg
-           (cond
-            ((stringp error-msg) error-msg)
-            ((listp error-msg) (cadr error-msg))
-            (t (format "%S" error-msg))))))
+  (if (and (listp err)
+           (get (car err) 'error-conditions))
+      (signal (car err) (cdr err))
+    (error "%S" err)))
 
 (defun deferred:default-cancel (d)
   "[internal] Default canceling function."
@@ -328,22 +322,23 @@ an argument value for execution of the deferred task."
           (error 
            (cond
             (next-deferred
-             (deferred:post-task next-deferred 'ng (error-message-string err)))
+             (deferred:post-task next-deferred 'ng err))
             (deferred:onerror
               (deferred:call-lambda deferred:onerror err))
             (t
-             (deferred:message "ERROR : %s" err)
-             (message "deferred error : %s" err)
+             (deferred:message "ERROR : %S" err)
+             (message "deferred error : %S" err)
              (setf (deferred-status d) 'ng)
-             (setf (deferred-value d) (error-message-string err))
-             (deferred:esc-msg (error-message-string err))))))))
+             (setf (deferred-value d) err)
+             err))))))
      (t ; <= (null callback)
       (let ((next-deferred (deferred-next d)))
         (cond
          (next-deferred
           (deferred:exec-task next-deferred which arg))
          ((eq which 'ok) arg)
-         (t (error (deferred:esc-msg arg)))))))))
+         (t                             ; (eq which 'ng)
+          (deferred:default-errorback arg))))))))
 
 (defun deferred:set-next (prev next)
   "[internal] Connect deferred objects."
@@ -815,7 +810,7 @@ process."
                         (when proc
                           (kill-process proc)
                           (kill-buffer proc-buf)))))
-            (error (deferred:post-task nd 'ng (error-message-string err))))
+            (error (deferred:post-task nd 'ng err)))
           nil))
       nd)))
 
