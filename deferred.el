@@ -419,7 +419,7 @@ an argument value for execution of the deferred task."
 (defun deferred:fail (&optional arg)
   "Create a synchronous deferred object."
   (let ((d (deferred:new)))
-    (deferred:exec-task d 'ok arg)
+    (deferred:exec-task d 'ng arg)
     d))
 
 (defun deferred:next (&optional callback arg)
