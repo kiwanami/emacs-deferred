@@ -299,46 +299,43 @@ an argument value for execution of the deferred task."
   (when (null d) (error "deferred:exec-task was given a nil."))
   (let ((callback (if (eq which 'ok) 
                       (deferred-callback d)
-                    (deferred-errorback d))))
+                    (deferred-errorback d)))
+        (next-deferred (deferred-next d)))
     (cond
      (callback
-      (let (value (next-deferred (deferred-next d)))
-        (deferred:condition-case err
-            (progn 
-              (setq value
-                    (deferred:call-lambda callback arg))
-              (cond
-               ((deferred-p value)
-                (deferred:message "WAIT NEST : %s" value)
-                (if next-deferred
-                    (deferred:set-next value next-deferred)
-                  value))
-               (t
-                (if next-deferred
-                    (deferred:post-task next-deferred 'ok value)
-                  (setf (deferred-status d) 'ok)
-                  (setf (deferred-value d) value)
-                  value))))
-          (error 
-           (cond
-            (next-deferred
-             (deferred:post-task next-deferred 'ng err))
-            (deferred:onerror
-              (deferred:call-lambda deferred:onerror err))
-            (t
-             (deferred:message "ERROR : %S" err)
-             (message "deferred error : %S" err)
-             (setf (deferred-status d) 'ng)
-             (setf (deferred-value d) err)
-             err))))))
+      (deferred:condition-case err
+          (let ((value (deferred:call-lambda callback arg))) 
+            (cond
+             ((deferred-p value)
+              (deferred:message "WAIT NEST : %s" value)
+              (if next-deferred
+                  (deferred:set-next value next-deferred)
+                value))
+             (t
+              (if next-deferred
+                  (deferred:post-task next-deferred 'ok value)
+                (setf (deferred-status d) 'ok)
+                (setf (deferred-value d) value)
+                value))))
+        (error 
+         (cond
+          (next-deferred
+           (deferred:post-task next-deferred 'ng err))
+          (deferred:onerror
+            (deferred:call-lambda deferred:onerror err))
+          (t
+           (deferred:message "ERROR : %S" err)
+           (message "deferred error : %S" err)
+           (setf (deferred-status d) 'ng)
+           (setf (deferred-value d) err)
+           err)))))
      (t ; <= (null callback)
-      (let ((next-deferred (deferred-next d)))
-        (cond
-         (next-deferred
-          (deferred:exec-task next-deferred which arg))
-         ((eq which 'ok) arg)
-         (t                             ; (eq which 'ng)
-          (deferred:default-errorback arg))))))))
+      (cond
+       (next-deferred
+        (deferred:exec-task next-deferred which arg))
+       ((eq which 'ok) arg)
+       (t                             ; (eq which 'ng)
+        (deferred:default-errorback arg)))))))
 
 (defun deferred:set-next (prev next)
   "[internal] Connect deferred objects."
