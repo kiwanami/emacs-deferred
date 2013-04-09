@@ -169,16 +169,13 @@ in the asynchronous tasks.")
 (defmacro deferred:condition-case (var protected-form &rest handlers)
   "[internal] Custom condition-case. See the comment for
 `deferred:debug-on-signal'."
-  (declare (debug (symbolp form &rest form)))
-  `(cond
-    ((null deferred:debug-on-signal)
-     (condition-case ,var ,protected-form ,@handlers))
-    (t
-     (let ((deferred:debug-on-signal-backup debug-on-signal))
-       (setq debug-on-signal deferred:debug-on-signal)
-       (unwind-protect
-           (condition-case ,var ,protected-form ,@handlers)
-         (setq debug-on-signal deferred:debug-on-signal-backup))))))
+  (declare (debug condition-case)
+           (indent 2))
+  `(let ((debug-on-signal
+          (or debug-on-signal deferred:debug-on-signal)))
+     (condition-case ,var
+         ,protected-form
+       ,@handlers)))
 
 
 
