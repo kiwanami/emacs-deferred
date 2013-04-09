@@ -284,6 +284,7 @@ is a string, it is signaled as a generic error using `error'.
 Otherwise, ERR is formatted into a string as if by `print' before
 raising with `error'."
   (cond ((and (listp err)
+              (symbolp (car err))
               (get (car err) 'error-conditions))
          (signal (car err) (cdr err)))
         ((stringp err)
