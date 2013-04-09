@@ -276,10 +276,23 @@ Mainly this function is called by timer asynchronously."
 
 (defun deferred:default-errorback (err)
   "[internal] Default errorback function."
-  (if (and (listp err)
-           (get (car err) 'error-conditions))
-      (signal (car err) (cdr err))
-    (error "%S" err)))
+  (deferred:resignal err))
+
+(defun deferred:resignal (err)
+  "[internal] Safely resignal ERR as an Emacs condition.
+
+If ERR is a cons (ERROR-SYMBOL . DATA) where ERROR-SYMBOL has an
+`error-conditions' property, it is re-signaled unchanged. If ERR
+is a string, it is signaled as a generic error using `error'.
+Otherwise, ERR is formatted into a string as if by `print' before
+raising with `error'."
+  (cond ((and (listp err)
+              (get (car err) 'error-conditions))
+         (signal (car err) (cdr err)))
+        ((stringp err)
+         (error "%s" err))
+        (t
+         (error "%S" err))))
 
 (defun deferred:default-cancel (d)
   "[internal] Default canceling function."
@@ -335,7 +348,7 @@ an argument value for execution of the deferred task."
         (deferred:exec-task next-deferred which arg))
        ((eq which 'ok) arg)
        (t                             ; (eq which 'ng)
-        (deferred:default-errorback arg)))))))
+        (deferred:resignal arg)))))))
 
 (defun deferred:set-next (prev next)
   "[internal] Connect deferred objects."
@@ -443,7 +456,9 @@ monitoring of tasks."
   (lexical-let* 
       ((callback callback)
        (normal (lambda (x) (ignore-errors (deferred:call-lambda callback x)) x))
-       (err    (lambda (e) (ignore-errors (deferred:call-lambda callback e)) (error e))))
+       (err    (lambda (e)
+                 (ignore-errors (deferred:call-lambda callback e))
+                 (deferred:resignal e))))
     (let ((nd (make-deferred :callback normal :errorback err)))
       (deferred:set-next d nd))))
 
