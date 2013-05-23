@@ -3,7 +3,7 @@
 ;; Copyright (C) 2010, 2011, 2012  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
-;; Version: 0.3.1
+;; Version: 0.3.2
 ;; Keywords: deferred, async
 ;; URL: https://github.com/kiwanami/emacs-deferred
 
@@ -69,7 +69,7 @@
   (require 'cl))
 
 (defvar deferred:version nil "deferred.el version")
-(setq deferred:version "0.3")
+(setq deferred:version "0.3.2")
 
 ;;; Code:
 
