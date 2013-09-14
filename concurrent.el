@@ -32,8 +32,7 @@
 ;; - Dataflow
 ;; - Signal/Channel
 
-(eval-when-compile
-  (require 'cl))
+(require 'cl)
 
 (require 'deferred)
 
@@ -500,5 +499,10 @@ This function does nothing for the waiting deferred objects."
 
 
 (provide 'concurrent)
+
+;; Local Variables:
+;; byte-compile-warnings: (not cl-functions)
+;; End:
+
 ;;; concurrent.el ends here
 
