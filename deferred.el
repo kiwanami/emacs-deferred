@@ -802,9 +802,9 @@ process."
                    (cond
                     ((string-match "exited abnormally" event)
                      (let ((msg (if (buffer-live-p proc-buf)
-                                    (deferred:buffer-string
-                                      (format "Process [%s] exited abnormally : %%s" 
-                                              command) proc-buf)
+                                    (format "Process [%s] exited abnormally : %s"
+                                            command
+                                            (with-current-buffer proc-buf (buffer-string)))
                                   (concat "Process exited abnormally: " proc-name))))
                        (kill-buffer proc-buf)
                        (deferred:post-task nd 'ng msg)))
