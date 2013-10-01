@@ -262,14 +262,14 @@
      (expect "errorback called"
              ;; basic errorback test
              (dtest (next (error "errorback"))
-                    (errorc it (concat e " called"))))
+                    (errorc it (concat (cadr e) " called"))))
 
      (expect "next callback called"
              ;; error recovery test
              (dtest
               (next (error "callback called"))
               (errorc it e)
-              (nextc it (concat "next " x))))
+              (nextc it (concat "next " (cadr x)))))
 
      (expect "second errorback called"
              ;; error recovery test 2
@@ -280,7 +280,7 @@
               (errorc it (deferred:not-called-func "second errorback2"))
               (nextc it (error "second errorback called"))
               (nextc it "skipped")
-              (errorc it e)))
+              (errorc it (cadr e))))
 
      (expect "start errorback ok1"
              ;; start errorback test1
@@ -289,7 +289,7 @@
                  (dtest 
                   (progn (deferred:errorback d "start errorback") d)
                   (nextc it (deferred:not-called-func "ERROR : start errorback"))
-                  (errorc it e)
+                  (errorc it (cadr e))
                   (nextc it (concat x " ok1"))))))
 
      (expect "post errorback ok2"
@@ -298,7 +298,7 @@
                (dtest
                 (progn (deferred:errorback-post d "post errorback") d)
                 (nextc it (deferred:not-called-func "ERROR : post errorback"))
-                (errorc it e)
+                (errorc it (cadr e))
                 (nextc it (concat x " ok2")))))
 
      (expect "Child deferred chain"
@@ -324,7 +324,7 @@
                 (next "chain")
                 (nextc it (error "error!!"))
                 (deferred:watch it (lambda (x) (setq val " watch") nil))
-                (errorc it (concat e val " ok")))))
+                (errorc it (concat (cadr e) val " ok")))))
 
      (expect "chain watch ok2"
              ;; watch chain: normal
@@ -499,7 +499,7 @@
                    (nextc it (error "err"))
                    (nextc it (deferred:not-called-func x)))
                 :catch
-                (lambda (e) (concat "catch:" e)))
+                (lambda (e) (concat "catch:" (cadr e))))
               (nextc it (concat "try-" x))))
 
      (expect "try-catch:err-finally"
@@ -511,7 +511,7 @@
                      (nextc it (error "err"))
                      (nextc it (deferred:not-called-func x)))
                   :catch
-                  (lambda (e) (concat "catch:" e))
+                  (lambda (e) (concat "catch:" (cadr e)))
                   :finally
                   (lambda (x) (setq val "finally")))
                 (nextc it (concat "try-" x "-" val)))))
@@ -573,7 +573,7 @@
               (deferred:loop 5
                 (lambda (i) (if (= 2 i) (error "loop error"))))
               (nextc it (deferred:not-called-func))
-              (errorc it (format "%s!" e))
+              (errorc it (format "%s!" (cadr e)))
               (nextc it x)))
 
      (expect "loop error catch ok"
@@ -584,7 +584,7 @@
                (dtest
                 (next  "try ") ; try
                 (nextc it (funcall body)) ; body
-                (errorc it (format "%s catch " e)) ; catch 
+                (errorc it (format "%s catch " (cadr e))) ; catch 
                 (nextc it (concat x "ok"))))) ; finally
 
      (expect "4 ok"
@@ -661,21 +661,21 @@
                (lambda () (next 0))
                (next 1))))
 
-     (expect "(ERROR OK ERROR2)"
+     (expect "((error ERROR) OK (error ERROR2))"
              ;; error handling
              (dtest
               (parallel
                (next (error "ERROR")) (next "OK") (next (error "ERROR2")))
               (nextc it (format "%s" x))))
 
-     (expect "(ERROR ERROR2)"
+     (expect "((error ERROR) (error ERROR2))"
              ;; failed test
              (dtest
               (parallel
                (next (error "ERROR")) (next (error "ERROR2")))
               (nextc it (format "%s" x))))
 
-     (expect "((b . OK) (a . ERROR) (c . ERROR2))"
+     (expect "((b . OK) (a error ERROR) (c error ERROR2))"
              ;; error handling
              (dtest
               (parallel
@@ -684,7 +684,7 @@
                (cons 'c (next (error "ERROR2"))))
               (nextc it (format "%s" x))))
 
-     (expect "((a . ERROR) (b . ERROR2))"
+     (expect "((a error ERROR) (b error ERROR2))"
              ;; failed test
              (dtest
               (parallel
@@ -875,11 +875,11 @@
       (deferred:cancel (deferred:process "pwd" nil))
       (length (buffer-list)))
 
-     (expect 0
+     (expect 'file-error
              (dtest
               (deferred:process "pwd---")
               (nextc it (deferred:not-called-func))
-              (errorc it (string-match "^Searching for program:" e))))
+              (errorc it (car e))))
 
      (expect 
       (with-temp-buffer (call-process "pwd" nil t nil)
@@ -916,11 +916,11 @@
       (deferred:cancel (deferred:process-buffer "ls" nil))
       (length (buffer-list)))
 
-     (expect 0
+     (expect 'file-error
              (dtest
               (deferred:process-buffer "pwd---")
               (nextc it (deferred:not-called-func))
-              (errorc it (string-match "^Searching for program:" e))))
+              (errorc it (car e))))
 
      ;;shell
 

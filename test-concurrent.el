@@ -171,7 +171,7 @@
                  (push 'e result)
                  (error "SMP CC ERR"))))
      (lambda (e) 
-       (when (equal "SMP CC ERR" e)
+       (when (equal "SMP CC ERR" (cadr e))
          (push 'f result))))
 
     dfinish))
