@@ -66,7 +66,7 @@
                (push i ret))))
     (nreverse ret)))
 
-(defun cc:generator-line (line)
+(defun cc:generator-line (chain line)
   "[internal] Return a macro expansion to execute the sexp LINE
 asynchronously."
   (cond
@@ -104,7 +104,7 @@ means calling callback function CALLBACK."
        (setq ,chain ,waiter)
        ,@(loop for i in body
                collect
-               (cc:generator-line i))
+               (cc:generator-line chain i))
        (lambda () (deferred:callback ,waiter)))))
 
 
