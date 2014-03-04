@@ -65,8 +65,7 @@
 ;; This program makes simple multi-thread function, using
 ;; deferred.el.
 
-(eval-when-compile
-  (require 'cl))
+(require 'cl)
 
 (defvar deferred:version nil "deferred.el version")
 (setq deferred:version "0.3.2")
