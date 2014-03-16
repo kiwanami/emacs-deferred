@@ -2,12 +2,26 @@
  concurrent.el manual
 ======================
 
+API
+===
+
 .. el:require:: concurrent
+
+Pseudo-thread
+-------------
 
 .. el:function:: cc:thread
    :auto:
+
+Generator
+---------
+
 .. el:function:: cc:generator
    :auto:
+
+Semaphore
+---------
+
 .. el:function:: cc:semaphore-create
    :auto:
 .. el:function:: cc:semaphore-acquire
@@ -20,6 +34,10 @@
    :auto:
 .. el:function:: cc:semaphore-interrupt-all
    :auto:
+
+Signal
+------
+
 .. el:function:: cc:signal-channel
    :auto:
 .. el:function:: cc:signal-connect
@@ -32,6 +50,10 @@
    :auto:
 .. el:function:: cc:signal-disconnect-all
    :auto:
+
+Dataflow
+--------
+
 .. el:function:: cc:dataflow-environment
    :auto:
 .. el:function:: cc:dataflow-get

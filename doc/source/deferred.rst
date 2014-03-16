@@ -59,6 +59,12 @@ API
 
 .. el:require:: deferred
 
+Functions
+---------
+
+Basic functions
+~~~~~~~~~~~~~~~
+
 .. el:function:: deferred:next
    :auto:
 .. el:function:: deferred:nextc
@@ -73,12 +79,20 @@ API
    :auto:
 .. el:function:: deferred:$
    :auto:
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
 .. el:function:: deferred:loop
    :auto:
 .. el:function:: deferred:parallel
    :auto:
 .. el:function:: deferred:earlier
    :auto:
+
+Wrapper functions
+~~~~~~~~~~~~~~~~~
+
 .. el:function:: deferred:call
    :auto:
 .. el:function:: deferred:apply
@@ -99,6 +113,10 @@ API
    :auto:
 .. el:function:: deferred:url-post
    :auto:
+
+Primitive functions
+~~~~~~~~~~~~~~~~~~~
+
 .. el:function:: deferred:new
    :auto:
 .. el:function:: deferred:succeed
@@ -113,6 +131,10 @@ API
    :auto:
 .. el:function:: deferred:errorback-post
    :auto:
+
+Utility Macros
+~~~~~~~~~~~~~~
+
 .. el:function:: deferred:try
    :auto:
 .. el:function:: deferred:timeout
