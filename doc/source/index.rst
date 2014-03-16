@@ -11,8 +11,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   installation
    deferred
    concurrent
+   deferred-api
+   concurrent-api
    development
 
 
