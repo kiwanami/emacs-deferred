@@ -336,12 +336,19 @@ the removed deferred object. "
 PARENT-ENV is the default environment. If this environment doesn't have the entry A and the parent one has the entry A, this environment can return the entry A. One can override the entry, setting another entry A to this environment.
 TEST-FUNC is a test function that compares the entry keys. The default function is `equal'.
 CHANNEL is a channel object that sends signals of variable events. Observers can receive following signals:
--get-first : the fist referrer is waiting for binding,
--get-waiting : another referrer is waiting for binding,
--set : a value is bound,
--get : returned a bound value,
--clear : cleared one entry,
--clear-all : cleared all entries.
+
+``get-first``
+    the fist referrer is waiting for binding
+``get-waiting``
+    another referrer is waiting for binding
+``set``
+    a value is bound
+``get``
+    returned a bound value
+``clear``
+    cleared one entry
+``clear-all``
+    cleared all entries
 "
   (let ((this (list parent-env
                     (or test-func 'equal)
