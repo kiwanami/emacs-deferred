@@ -1,6 +1,6 @@
-============
-deferred API
-============
+===============
+deferred.el API
+===============
 
 .. el:require:: deferred
 

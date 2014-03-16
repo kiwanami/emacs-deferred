@@ -1,6 +1,6 @@
-==============
-concurrent API
-==============
+=================
+concurrent.el API
+=================
 
 .. el:require:: concurrent
 
