@@ -425,8 +425,15 @@ an argument value for execution of the deferred task."
     d))
 
 (defun deferred:next (&optional callback arg)
-  "Create a deferred object and schedule executing. This function
-is a short cut of following code:
+  "Create a deferred object and schedule executing.
+
+:Arguments:
+    CALLBACK
+        a function with zero or one argument
+:Return: a deferred object
+
+This function is a short cut of following code::
+
  (deferred:callback-post (deferred:new callback))."
   (let ((d (if callback
                (make-deferred :callback callback)
@@ -435,12 +442,40 @@ is a short cut of following code:
     d))
 
 (defun deferred:nextc (d callback)
-  "Create a deferred object with OK callback and connect it to the given deferred object."
+  "Create a deferred object with OK callback and connect it to
+the given deferred object.
+
+:Arguments:
+    D
+        a deferred object
+    CALLBACK
+        a function with zero or one argument
+:Return: a deferred object
+
+Return a deferred object that wrap the given callback
+function.  Then, connect the created deferred object with the
+given deferred object."
   (let ((nd (make-deferred :callback callback)))
     (deferred:set-next d nd)))
 
 (defun deferred:error (d callback)
-  "Create a deferred object with errorback and connect it to the given deferred object."
+  "Create a deferred object with ERRORBACK and connect it to the
+given deferred object D.
+
+:Arguments:
+    D
+        a deferred object
+    ERRORBACK
+        a function with zero or one argument
+:Return: a deferred object
+
+Return a deferred object that wraps the given function as an
+ERRORBACK.  Then, connect the created deferred object with the
+given deferred object.  The given ERRORBACK function catches the
+error occurred in the previous task.
+
+If this function does not throw an error, the subsequent callback
+functions are executed."
   (let ((nd (make-deferred :errorback callback)))
     (deferred:set-next d nd)))
 
