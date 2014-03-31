@@ -846,24 +846,29 @@ process."
 (eval-after-load "url"
   ;; for url package
   ;; TODO: proxy, charaset
-  '(progn
+  ;; List of gloabl variables to preserve and restore before url-retrieve call
+  '(lexical-let ((url-global-variables '(url-request-data
+                                         url-request-method
+                                         url-request-extra-headers)))
 
      (defun deferred:url-retrieve (url &optional cbargs)
        "A wrapper function for url-retrieve. The next deferred
 object receives the buffer object that URL will load
 into. Currently dynamic binding variables are not supported."
-       (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf)
+       (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf
+                     (local-values (mapcar (lambda (symbol) (symbol-value symbol)) url-global-variables)))
          (deferred:next
            (lambda (x)
-             (condition-case err
-                 (setq buf
-                       (url-retrieve 
-                        url (lambda (xx) (deferred:post-task nd 'ok buf))
-                        cbargs))
+             (progv url-global-variables local-values
+               (condition-case err
+                   (setq buf
+                         (url-retrieve
+                          url (lambda (xx) (deferred:post-task nd 'ok buf))
+                          cbargs))
                  (error (deferred:post-task nd 'ng err)))
-             nil))
+             nil)))
          (setf (deferred-cancel nd)
-               (lambda (x) 
+               (lambda (x)
                  (when (buffer-live-p buf)
                    (kill-buffer buf))))
          nd))
