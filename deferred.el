@@ -851,11 +851,12 @@ process."
                                          url-request-method
                                          url-request-extra-headers)))
 
-     (defun deferred:url-retrieve (url &optional cbargs)
+     (defun deferred:url-retrieve (url &optional cbargs silent inhibit-cookies)
        "A wrapper function for url-retrieve. The next deferred
 object receives the buffer object that URL will load
 into. Currently dynamic binding variables are not supported."
-       (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf
+       (lexical-let ((nd (deferred:new)) (url url)
+                     (cbargs cbargs) (silent silent) (inhibit-cookies inhibit-cookies) buf
                      (local-values (mapcar (lambda (symbol) (symbol-value symbol)) url-global-variables)))
          (deferred:next
            (lambda (x)
@@ -864,7 +865,7 @@ into. Currently dynamic binding variables are not supported."
                    (setq buf
                          (url-retrieve
                           url (lambda (xx) (deferred:post-task nd 'ok buf))
-                          cbargs))
+                          cbargs silent inhibit-cookies))
                  (error (deferred:post-task nd 'ng err)))
              nil)))
          (setf (deferred-cancel nd)
@@ -886,23 +887,25 @@ into. Currently dynamic binding variables are not supported."
          (kill-buffer buf))
        nil)
 
-     (defun deferred:url-get (url &optional params)
+     (defun deferred:url-get (url &optional params &rest args)
        "Perform a HTTP GET method with `url-retrieve'. PARAMS is
-a parameter list of (key . value) or key. The next deferred
+a parameter list of (key . value) or key. ARGS will be appended
+to deferred:url-retrieve args list. The next deferred
 object receives the buffer object that URL will load into."
        (when params
          (setq url
                (concat url "?" (deferred:url-param-serialize params))))
        (let ((d (deferred:$
-                  (deferred:url-retrieve url)
+                  (apply 'deferred:url-retrieve url args)
                   (deferred:nextc it 'deferred:url-delete-header))))
          (deferred:set-next
            d (deferred:new 'deferred:url-delete-buffer))
          d))
 
-     (defun deferred:url-post (url &optional params)
+     (defun deferred:url-post (url &optional params &rest args)
        "Perform a HTTP POST method with `url-retrieve'. PARAMS is
-a parameter list of (key . value) or key. The next deferred
+a parameter list of (key . value) or key. ARGS will be appended
+to deferred:url-retrieve args list. The next deferred
 object receives the buffer object that URL will load into."
        (let ((url-request-method "POST")
              (url-request-extra-headers
@@ -910,7 +913,7 @@ object receives the buffer object that URL will load into."
                       '(("Content-Type" . "application/x-www-form-urlencoded"))))
              (url-request-data (deferred:url-param-serialize params)))
          (let ((d (deferred:$
-                    (deferred:url-retrieve url)
+                    (apply 'deferred:url-retrieve url args)
                     (deferred:nextc it 'deferred:url-delete-header))))
            (deferred:set-next
              d (deferred:new 'deferred:url-delete-buffer))
