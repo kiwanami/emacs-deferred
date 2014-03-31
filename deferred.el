@@ -854,7 +854,8 @@ process."
      (defun deferred:url-retrieve (url &optional cbargs silent inhibit-cookies)
        "A wrapper function for url-retrieve. The next deferred
 object receives the buffer object that URL will load
-into. Currently dynamic binding variables are not supported."
+into. Values of dynamically bound 'url-request-data', 'url-request-method' and
+'url-request-extra-headers' are passed to url-retrieve call."
        (lexical-let ((nd (deferred:new)) (url url)
                      (cbargs cbargs) (silent silent) (inhibit-cookies inhibit-cookies) buf
                      (local-values (mapcar (lambda (symbol) (symbol-value symbol)) url-global-variables)))
