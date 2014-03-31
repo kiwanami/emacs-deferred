@@ -904,29 +904,14 @@ object receives the buffer object that URL will load into."
        "Perform a HTTP POST method with `url-retrieve'. PARAMS is
 a parameter list of (key . value) or key. The next deferred
 object receives the buffer object that URL will load into."
-       (lexical-let ((nd (deferred:new)) 
-                     (url url) (params params)
-                     buf)
-         (deferred:next
-           (lambda (x)
-             (let ((url-request-method "POST")
-                   (url-request-extra-headers
-                    '(("Content-Type" . "application/x-www-form-urlencoded")))
-                   (url-request-data
-                    (deferred:url-param-serialize params)))
-               (condition-case err
-                   (setq buf 
-                         (url-retrieve 
-                          url 
-                          (lambda (&rest args) 
-                            (deferred:post-task nd 'ok buf))))
-                 (error (deferred:post-task nd 'ng err))))
-             nil))
-         (setf (deferred-cancel nd)
-               (lambda (x) 
-                 (when (buffer-live-p buf)
-                   (kill-buffer buf))))
-         (let ((d (deferred:nextc nd 'deferred:url-delete-header)))
+       (let ((url-request-method "POST")
+             (url-request-extra-headers
+              (append url-request-extra-headers
+                      '(("Content-Type" . "application/x-www-form-urlencoded"))))
+             (url-request-data (deferred:url-param-serialize params)))
+         (let ((d (deferred:$
+                    (deferred:url-retrieve url)
+                    (deferred:nextc it 'deferred:url-delete-header))))
            (deferred:set-next
              d (deferred:new 'deferred:url-delete-buffer))
            d)))
