@@ -14,7 +14,7 @@ If you have [auto-install.el](http://www.emacswiki.org/emacs/auto-install.el "au
 
 Install by auto-install:
 
-    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
+    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
 
 
 ## Sample codes ##

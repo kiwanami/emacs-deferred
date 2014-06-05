@@ -10,8 +10,8 @@ deferred.el と concurrent.elをload-pathに置いてください。
 
 インストール実行:
 
-    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
-    (auto-install-from-url https://github.com/kiwanami/emacs-deferred/raw/master/concurrent.el")
+    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
+    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/concurrent.el")
 
 
 ## 使い方例 ##
