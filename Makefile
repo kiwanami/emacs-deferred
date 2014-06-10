@@ -1,9 +1,14 @@
 EMACS ?= emacs
 
-test: test-concurrent
+.PHONY: test test-deferred test-concurrent compile clean print-deps travis-ci
+
+test: test-deferred test-concurrent
+
+test-deferred:
+	$(EMACS) -batch -Q -L . -l test-deferred.el -f ert-run-tests-batch-and-exit
 
 test-concurrent:
-	$(EMACS) --batch -Q -L . -l test-concurrent.el -f 'cc:test-all'
+	$(EMACS) -batch -Q -L . -l test-concurrent.el -f 'cc:test-all'
 
 compile: deferred.elc concurrent.elc
 
