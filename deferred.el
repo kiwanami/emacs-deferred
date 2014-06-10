@@ -846,24 +846,31 @@ process."
 (eval-after-load "url"
   ;; for url package
   ;; TODO: proxy, charaset
-  '(progn
+  ;; List of gloabl variables to preserve and restore before url-retrieve call
+  '(lexical-let ((url-global-variables '(url-request-data
+                                         url-request-method
+                                         url-request-extra-headers)))
 
-     (defun deferred:url-retrieve (url &optional cbargs)
+     (defun deferred:url-retrieve (url &optional cbargs silent inhibit-cookies)
        "A wrapper function for url-retrieve. The next deferred
 object receives the buffer object that URL will load
-into. Currently dynamic binding variables are not supported."
-       (lexical-let ((nd (deferred:new)) (url url) (cbargs cbargs) buf)
+into. Values of dynamically bound 'url-request-data', 'url-request-method' and
+'url-request-extra-headers' are passed to url-retrieve call."
+       (lexical-let ((nd (deferred:new)) (url url)
+                     (cbargs cbargs) (silent silent) (inhibit-cookies inhibit-cookies) buf
+                     (local-values (mapcar (lambda (symbol) (symbol-value symbol)) url-global-variables)))
          (deferred:next
            (lambda (x)
-             (condition-case err
-                 (setq buf
-                       (url-retrieve 
-                        url (lambda (xx) (deferred:post-task nd 'ok buf))
-                        cbargs))
+             (progv url-global-variables local-values
+               (condition-case err
+                   (setq buf
+                         (url-retrieve
+                          url (lambda (xx) (deferred:post-task nd 'ok buf))
+                          cbargs silent inhibit-cookies))
                  (error (deferred:post-task nd 'ng err)))
-             nil))
+             nil)))
          (setf (deferred-cancel nd)
-               (lambda (x) 
+               (lambda (x)
                  (when (buffer-live-p buf)
                    (kill-buffer buf))))
          nd))
@@ -881,47 +888,34 @@ into. Currently dynamic binding variables are not supported."
          (kill-buffer buf))
        nil)
 
-     (defun deferred:url-get (url &optional params)
+     (defun deferred:url-get (url &optional params &rest args)
        "Perform a HTTP GET method with `url-retrieve'. PARAMS is
-a parameter list of (key . value) or key. The next deferred
+a parameter list of (key . value) or key. ARGS will be appended
+to deferred:url-retrieve args list. The next deferred
 object receives the buffer object that URL will load into."
        (when params
          (setq url
                (concat url "?" (deferred:url-param-serialize params))))
        (let ((d (deferred:$
-                  (deferred:url-retrieve url)
+                  (apply 'deferred:url-retrieve url args)
                   (deferred:nextc it 'deferred:url-delete-header))))
          (deferred:set-next
            d (deferred:new 'deferred:url-delete-buffer))
          d))
 
-     (defun deferred:url-post (url &optional params)
+     (defun deferred:url-post (url &optional params &rest args)
        "Perform a HTTP POST method with `url-retrieve'. PARAMS is
-a parameter list of (key . value) or key. The next deferred
+a parameter list of (key . value) or key. ARGS will be appended
+to deferred:url-retrieve args list. The next deferred
 object receives the buffer object that URL will load into."
-       (lexical-let ((nd (deferred:new)) 
-                     (url url) (params params)
-                     buf)
-         (deferred:next
-           (lambda (x)
-             (let ((url-request-method "POST")
-                   (url-request-extra-headers
-                    '(("Content-Type" . "application/x-www-form-urlencoded")))
-                   (url-request-data
-                    (deferred:url-param-serialize params)))
-               (condition-case err
-                   (setq buf 
-                         (url-retrieve 
-                          url 
-                          (lambda (&rest args) 
-                            (deferred:post-task nd 'ok buf))))
-                 (error (deferred:post-task nd 'ng err))))
-             nil))
-         (setf (deferred-cancel nd)
-               (lambda (x) 
-                 (when (buffer-live-p buf)
-                   (kill-buffer buf))))
-         (let ((d (deferred:nextc nd 'deferred:url-delete-header)))
+       (let ((url-request-method "POST")
+             (url-request-extra-headers
+              (append url-request-extra-headers
+                      '(("Content-Type" . "application/x-www-form-urlencoded"))))
+             (url-request-data (deferred:url-param-serialize params)))
+         (let ((d (deferred:$
+                    (apply 'deferred:url-retrieve url args)
+                    (deferred:nextc it 'deferred:url-delete-header))))
            (deferred:set-next
              d (deferred:new 'deferred:url-delete-buffer))
            d)))
