@@ -239,14 +239,22 @@ Mainly this function is called by timer asynchronously."
     value))
 
 (defun deferred:sync! (d)
-  "Wait for the given deferred task. For test and debugging."
+  "Wait for the given deferred task. For test and debugging.
+Error is raised if it is not processed within deferred chain D."
   (progn 
-    (lexical-let ((last-value 'deferred:undefined*))
-      (deferred:nextc d
-        (lambda (x) (setq last-value x)))
-      (while (eq 'deferred:undefined* last-value)
+    (lexical-let ((last-value 'deferred:undefined*)
+                  uncaught-error)
+      (deferred:try
+        (deferred:nextc d
+          (lambda (x) (setq last-value x)))
+        :catch
+        (lambda (err) (setq uncaught-error err)))
+      (while (and (eq 'deferred:undefined* last-value)
+                  (not uncaught-error))
         (sit-for 0.05)
         (sleep-for 0.05))
+      (when uncaught-error
+        (deferred:resignal uncaught-error))
       last-value)))
 
 
