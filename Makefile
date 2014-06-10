@@ -1,5 +1,9 @@
 EMACS ?= emacs
 
+CURL=curl --silent -L
+ERT_URL=http://git.savannah.gnu.org/cgit/emacs.git/plain/lisp/emacs-lisp/ert.el?h=emacs-24
+ERT=ert
+
 .PHONY: test test-deferred test-concurrent compile clean print-deps travis-ci
 
 test: test-deferred test-concurrent
@@ -17,6 +21,9 @@ compile: deferred.elc concurrent.elc
 
 clean:
 	rm -rfv *.elc
+
+download-ert:
+	$(CURL) '$(ERT_URL)' > './$(ERT).el'
 
 print-deps:
 	@echo "----------------------- Dependencies -----------------------"
