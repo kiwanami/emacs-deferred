@@ -559,9 +559,12 @@
 ;; (cc:debug (cc:test-signal2) "Signal2 : %s" x)
 
 (defvar cc:test-finished-flag nil)
+(defvar cc:test-fails 0)
 
 (defun cc:test-all ()
   (interactive)
+  (setq cc:test-finished-flag nil)
+  (setq cc:test-fails 0)
   (deferred:$
     (deferred:parallel
       (loop for i in '(cc:test-fib-gen
@@ -596,13 +599,17 @@
                  (goto-char (point-min))
                  (insert (format "Test Finished : %s\nTests Fails: %s / %s\n" 
                                  (format-time-string   "%Y/%m/%d %H:%M:%S" (current-time))
-                                 fails (length results))))
+                                 fails (length results)))
+                 (setq cc:test-fails fails))
            (message (buffer-string))
            (current-buffer)))
         (setq cc:test-finished-flag t))))
 
   (while (null cc:test-finished-flag)
-    (sleep-for 0 100) (sit-for 0 100)))
+    (sleep-for 0 100) (sit-for 0 100))
+  (when (and noninteractive
+             (> cc:test-fails 0))
+    (error "Test failed")))
 
 ;;(cc:test-all)
 
