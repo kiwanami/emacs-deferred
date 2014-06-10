@@ -3,8 +3,7 @@ EMACS ?= emacs
 test: test-concurrent
 
 test-concurrent:
-	$(EMACS) --batch -Q -L . -l concurrent.el -l test-concurrent.el -f 'cc:test-all'
-# FIXME: Remove "-l concurrent.el"
+	$(EMACS) --batch -Q -L . -l test-concurrent.el -f 'cc:test-all'
 
 compile: deferred.elc concurrent.elc
 
