@@ -1,7 +1,6 @@
 language: emacs-lisp
 env:
   matrix:
-    - EMACS=emacs
     - EMACS=emacs24 EMACS_PPA=ppa:cassou/emacs
     - EMACS=emacs-snapshot EMACS_PPA=ppa:cassou/emacs
     - EMACS=emacs-snapshot EMACS_PPA=ppa:ubuntu-elisp/ppa
@@ -17,7 +16,5 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install --force-yes -qq "$EMACS"
   - sudo apt-get install --force-yes -qq "${EMACS}-el" || true  # OK to fail
-before_script:
-  - make download-ert
 script:
   - make travis-ci
