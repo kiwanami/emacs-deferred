@@ -798,12 +798,16 @@ process."
          (proc-name (format "*deferred:*%s*:%s" command uid))
          (buf-name (format " *deferred:*%s*:%s" command uid))
          (pwd default-directory)
+         (env process-environment)
+         (con-type process-connection-type)
          (nd (deferred:new)) proc-buf proc)
       (deferred:nextc d
         (lambda (x)
           (setq proc-buf (get-buffer-create buf-name))
           (condition-case err
-              (let ((default-directory pwd))
+              (let ((default-directory pwd)
+                    (process-environment env)
+                    (process-connection-type con-type))
                 (setq proc
                       (if (null (car args))
                           (apply f proc-name buf-name command nil)
