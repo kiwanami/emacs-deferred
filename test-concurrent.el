@@ -171,8 +171,9 @@
                  (push 'e result)
                  (error "SMP CC ERR"))))
      (lambda (e) 
-       (when (equal "SMP CC ERR" e)
-         (push 'f result))))
+       (destructuring-bind (sym msg) e
+         (when (and (eq 'error sym) (equal "SMP CC ERR" msg))
+           (push 'f result)))))
 
     dfinish))
 
