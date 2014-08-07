@@ -97,6 +97,17 @@
        (setq self (lambda( ,@args ) ,@body))
        (funcall self ,@argsyms)))))
 
+(defmacro* deferred:try (d &key catch finally)
+  "Try-catch-finally macro. This macro simulates the
+try-catch-finally block asynchronously. CATCH and FINALLY can be
+nil. Because of asynchrony, this macro does not ensure that the
+task FINALLY should be called."
+  (let ((chain 
+         (if catch `((deferred:error it ,catch)))))
+    (when finally
+      (setq chain (append chain `((deferred:watch it ,finally)))))
+    `(deferred:$ ,d ,@chain)))
+
 (defun deferred:setTimeout (f msec)
   "[internal] Timer function that emulates the `setTimeout' function in JS."
   (run-at-time (/ msec 1000.0) nil f))
@@ -715,17 +726,6 @@ deferred task and return the TIMEOUT-FORM."
      (deferred:nextc (deferred:wait ,timeout-msec)
        (lambda (x) ,timeout-form))
      ,d))
-
-(defmacro* deferred:try (d &key catch finally)
-  "Try-catch-finally macro. This macro simulates the
-try-catch-finally block asynchronously. CATCH and FINALLY can be
-nil. Because of asynchrony, this macro does not ensure that the
-task FINALLY should be called."
-  (let ((chain 
-         (if catch `((deferred:error it ,catch)))))
-    (when finally
-      (setq chain (append chain `((deferred:watch it ,finally)))))
-    `(deferred:$ ,d ,@chain)))
 
 
 
