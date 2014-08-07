@@ -869,8 +869,14 @@
            (earlier (deferred:succeed 1) (deferred:succeed 2))
            (nextc it (format "arrived %s ok" x)))))
 
+(ert-deftest deferred-sync! ()
+  (should= "foo"
+           (deferred:$
+             (deferred:next
+               (lambda ()
+                 "foo"))
+             (deferred:sync! it))))
 
-
 ;; process
 
 (ert-deftest deferred-process ()
