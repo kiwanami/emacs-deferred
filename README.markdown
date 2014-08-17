@@ -208,9 +208,9 @@ Try-catch-finally:
 
 ### Timeout ###
 
-Although a long time command is executed (3 second sleeping), the task is canceled by timeout for 1 second.
+Although a long time command is executed (3 second sleeping), the task is rejected by timeout for 1 second.
 
-The function 'deferred:earlier' also runs asynchronous tasks concurrently, however, the next deferred task receives the first result. The other results and tasks will be canceled.
+The function `deferred:earlier` also runs asynchronous tasks concurrently, however, the next deferred task receives the first result. The other results and tasks will be rejected (canceled or ignored).
 
 Timeout Process:
 
@@ -238,6 +238,8 @@ Timeout macro:
         (deferred:process "sh" "-c" "sleep 3 | echo 'hello!'"))
       (deferred:nextc it
         (lambda (x) (insert x))))
+
+Note that the `deferred:timeout` and `deferred:earlier` just rejects the task result and does not stop the running task chains. Please see the document for `deferred:cancel`.
 
 ### Loop and Animation ###
 
@@ -342,7 +344,8 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * Return
       * the given deferred object (invalidated)
    * Invalidate the given deferred object.
-   * Because this function modifies the deferred object, it can not be used in future.
+   * Because this function modifies the deferred object, one can not used the given deferred instance again.
+   * This function just cancels the given deferred instance, not the whole deferred chain. In the current deferred implementation, a message of cancellation can not propagate to chained deferred objects because the chain is built by the singly linked list. If the deferred chains may be canceled on your code, you should care the side-effect tasks.
 
 * deferred:watch (d callback)
    * Arguments
@@ -400,7 +403,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * Return
       * a deferred object
    * Return a deferred object that executes given functions in parallel and wait for the first callback value.
-      * The other tasks are canceled.
+      * The other tasks are rejected. (See the document for `deferred:cancel`)
    * Giving an alist of tasks as the argument, a cons cell is returned as a result.
    * When a task finishes abnormally, the task is ignored.
       * When all tasks finishes abnormally, the next task receives nil. That is, no errorback function is called.
@@ -554,7 +557,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * Return
       * a deferred object
    * Time out macro on a deferred task 'd'.
-   * If the deferred task 'd' does not complete within 'timeout-msec', this macro cancels the deferred task and return the 'timeout-form'.
+   * If the deferred task 'd' does not complete within 'timeout-msec', this macro rejects the deferred task and return the 'timeout-form'. (See the document for `deferred:cancel`)
    * This macro is implemented by 'deferred:earlier' and 'deferred:wait'.
 
 * deferred:process...
