@@ -67,6 +67,8 @@
 
 (require 'cl)
 
+(declare-function pp-display-expression 'pp)
+
 (defvar deferred:version nil "deferred.el version")
 (setq deferred:version "0.3.2")
 
