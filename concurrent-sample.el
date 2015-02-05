@@ -29,17 +29,17 @@ fib-list ;=> (3 2 1 1 0)
 ;;==================================================
 ;;; thread
 
-(lexical-let 
+(lexical-let
     ((count 0) (anm "-/|\\-")
      (end 50) (pos (point)))
-  (cc:thread 
-   60 
+  (cc:thread
+   60
    (message "Animation started.")
    (while (> end (incf count))
      (save-excursion
        (when (< 1 count)
          (goto-char pos) (delete-char 1))
-       (insert (char-to-string 
+       (insert (char-to-string
                 (aref anm (% count (length anm)))))))
    (save-excursion
      (goto-char pos) (delete-char 1))
@@ -56,13 +56,13 @@ fib-list ;=> (3 2 1 1 0)
 
 ;; executing three tasks...
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x) 
+  (lambda(x)
     (message "go1")))
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x) 
+  (lambda(x)
     (message "go2")))
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x) 
+  (lambda(x)
     (message "go3")))
 
 ;; => Only the fist task is executed and displays "go1".
@@ -91,7 +91,7 @@ fib-list ;=> (3 2 1 1 0)
 ;; Return the parent value.
 (cc:dataflow-get-sync dfenv "aaa") ; => 256
 
-(deferred:$ 
+(deferred:$
   (cc:dataflow-get dfenv "abc")
   (deferred:nextc it
     (lambda (x) (message "Got abc : %s" x))))
@@ -125,7 +125,7 @@ fib-list ;=> (3 2 1 1 0)
     (cc:dataflow-get dfenv "abc")
     (cc:dataflow-get dfenv "def"))
   (deferred:nextc it
-    (lambda (values) 
+    (lambda (values)
       (apply 'message "Got values : %s, %s" values)
       (apply '+ values)))
   (deferred:nextc it
@@ -152,19 +152,19 @@ fib-list ;=> (3 2 1 1 0)
 
 (progn
   (setq parent-channel (cc:signal-channel "parent"))
-  (cc:signal-connect 
+  (cc:signal-connect
    parent-channel 'parent-load
    (lambda (event) (message "Parent Signal : %s" event)))
-  (cc:signal-connect 
+  (cc:signal-connect
    parent-channel t
    (lambda (event) (message "Parent Listener : %s" event)))
 
   (setq channel (cc:signal-channel "child" parent-channel))
-  (cc:signal-connect 
-   channel 'window-load 
+  (cc:signal-connect
+   channel 'window-load
    (lambda (event) (message "Signal : %s" event)))
   (cc:signal-connect
-   channel t 
+   channel t
    (lambda (event) (message "Listener : %s" event)))
   (deferred:$
     (cc:signal-connect channel 'window-load)
@@ -181,4 +181,3 @@ fib-list ;=> (3 2 1 1 0)
 (cc:signal-send-global channel 'some "parent some hello!")
 
 (cc:signal-disconnect-all channel)
- 

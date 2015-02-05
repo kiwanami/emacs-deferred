@@ -1,8 +1,8 @@
 # deferred.el #
 
 'deferred.el' provides facilities to manage asynchronous tasks.
-The API and implementations were translated from 
-[JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45) and 
+The API and implementations were translated from
+[JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45) and
 [Mochikit.Async](http://mochikit.com/doc/html/MochiKit/Async.html
 "Mochikit.Async") (by Bob Ippolito) in JavaScript.
 
@@ -30,10 +30,10 @@ message buffer, and then require a number from minibuffer.
 Chain:
 
     (deferred:$
-      (deferred:next 
+      (deferred:next
         (lambda () (message "deferred start")))
       (deferred:nextc it
-        (lambda () 
+        (lambda ()
           (message "chain 1")
           1))
       (deferred:nextc it
@@ -50,7 +50,7 @@ Chain:
           (message "Wrong input : %s" err))))
 
 
-* This s-exp returns immediately. 
+* This s-exp returns immediately.
  * Asynchronous tasks start subsequently.
 * The macro 'deferred:$' chains deferred objects.
  * The anaphoric variable 'it' holds a deferred object in the previous line.
@@ -92,14 +92,14 @@ This s-exp inserts a text from http://www.gnu.org asynchronously. (You can clear
 HTTP GET:
 
     (require 'url)
-    
+
     (deferred:$
       (deferred:url-retrieve "http://www.gnu.org")
       (deferred:nextc it
         (lambda (buf)
           (insert  (with-current-buffer buf (buffer-string)))
           (kill-buffer buf))))
-    
+
 ### HTTP Get : Image ###
 
 This s-exp inserts an image from google asynchronously.
@@ -110,13 +110,13 @@ Get an image:
       (deferred:url-retrieve "http://www.google.co.jp/intl/en_com/images/srpr/logo1w.png")
       (deferred:nextc it
         (lambda (buf)
-          (insert-image 
-           (create-image 
+          (insert-image
+           (create-image
             (let ((data (with-current-buffer buf (buffer-string))))
               (substring data (+ (string-match "\n\n" data) 2)))
             'png t))
           (kill-buffer buf))))
-    
+
 ### Parallel ###
 
 This s-exp retrieves two images from google concurrently and wait for the both results. Then, the file sizes of the images are inserted the current buffer.
@@ -132,9 +132,9 @@ Parallel deferred:
       (deferred:nextc it
         (lambda (buffers)
           (loop for i in buffers
-                do 
-                (insert 
-                 (format 
+                do
+                (insert
+                 (format
                   "size: %s\n"
                   (with-current-buffer i (length (buffer-string)))))
                 (kill-buffer i)))))
@@ -144,7 +144,7 @@ Parallel deferred:
 * The next task receives a list of the results.
  * The order of the results is corresponding to one of the argument.
  * Giving an alist of tasks as the argument, the results alist is returned.
-    
+
 ### Deferred Combination : try-catch-finally ###
 
 This s-exp executes following tasks:
@@ -155,8 +155,8 @@ You can construct the control structure of deferred tasks, like try-catch-finall
 
 Get an image by wget and resize by ImageMagick:
 
-    (deferred:$ 
-    
+    (deferred:$
+
       ;; try
       (deferred:$
         (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
@@ -166,12 +166,12 @@ Get an image by wget and resize by ImageMagick:
           (lambda ()
             (clear-image-cache)
             (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
-    
+
       ;; catch
-      (deferred:error it ; 
-        (lambda (err) 
+      (deferred:error it ;
+        (lambda (err)
           (insert "Can not get a image! : " err)))
-    
+
       ;; finally
       (deferred:nextc it
         (lambda ()
@@ -258,17 +258,17 @@ Loop and animation:
       (deferred:$
         (deferred:next
           (lambda (x) (message "Animation started.")))
-    
+
         (deferred:nextc it
           (deferred:lambda (x)
             (save-excursion
               (when (< 0 count)
                 (goto-char pos) (delete-char 1))
-              (insert (char-to-string 
+              (insert (char-to-string
                        (aref anm (% count (length anm))))))
             (if (> end (incf count)) ; return nil to stop this loop
                 (deferred:nextc (deferred:wait wait-time) self)))) ; return the deferred
-    
+
         (deferred:nextc it
           (lambda (x)
             (save-excursion
@@ -317,7 +317,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
       * a deferred object
    * Return a deferred object that wrap the given callback function. Then, put the deferred object into the execution queue to run asynchronously.
       * Namely, run the given function asynchronously.
- 
+
 
 * deferred:nextc (d callback)
    * Arguments
@@ -329,7 +329,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
       * Namely, add the given function to the previous deferred object.
 
 * deferred:error (d errorback)
-   * Arguments 
+   * Arguments
       * d: a deferred object
       * errorback: a function with zero or one argument
    * Return
@@ -384,7 +384,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * If a list is given, not a number, the function visits each elements in the list like 'mapc'.
 
 * deferred:parallel (list-or-alist)
-   * Arguments 
+   * Arguments
       * list-or-alist:
       * more than one deferred objects or a list of functions
       * an alist consist of cons cells with a symbol and a deferred object or a function
@@ -467,14 +467,14 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * Arguments
       * url: URL to get
       * params: alist of parameters
-   * Return 
+   * Return
       * a deferred object
 
 * [experimental] deferred:url-post (url [params])
    * Arguments
       * url: URL to get
       * params: alist of parameters
-   * Return 
+   * Return
       * a deferred object
 
 #### Primitive functions ####
@@ -489,7 +489,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * Using this object, a deferred chain can pause to wait for other events. (See the source for 'deferred:wait'.)
 
 * deferred:succeed ([value])
-   * Arguments 
+   * Arguments
       * value: a value (optional)
    * Return
       * a deferred object
@@ -497,42 +497,42 @@ In the following example, `run-at-time` is used as an example for the asynchrono
    * When a deferred task is connected, the subsequent task will be executed immediately (synchronously).
 
 * deferred:fail ([error])
-   * Arguments 
+   * Arguments
       * error: an error value (optional)
-   * Return 
+   * Return
       * a deferred object
    * Create a deferred object that has been called the errorback function.
    * When a deferred task is connected, the subsequent task will be executed immediately (synchronously).
 
 * deferred:callback (d [value])
-   * Arguments 
+   * Arguments
       * d: a deferred object
       * value: a value (optional)
-   * Return 
+   * Return
       * a deferred object or a result value
    * Start executing the deferred tasks. The first task is executed synchronously.
 
 * deferred:callback-post (d [value])
-   * Arguments 
+   * Arguments
       * d: a deferred object
       * value: a value (optional)
-   * Return 
+   * Return
       * a deferred object or a result value
    * Start executing the deferred tasks. The first task is executed asynchronously.
 
 * deferred:errorback (d [error])
    * Arguments
-      * d: a deferred object 
+      * d: a deferred object
       * error: an error value (optional)
-   * Return 
+   * Return
       * a deferred object or a result value
    * Start executing the deferred tasks from errorback. The first task is executed synchronously.
 
 * deferred:errorback-post (d [error])
    * Arguments
-      * d: a deferred object 
+      * d: a deferred object
       * error: an error value (optional)
-   * Return 
+   * Return
       * a deferred object or a result value
    * Start executing the deferred tasks from errorback. The first task is executed asynchronously.
 
@@ -621,7 +621,7 @@ lexical-let Ex.:
       (deferred:$
         (deferred:wait 1000)
         (deferred:nextc it
-          (lambda (x) 
+          (lambda (x)
             (goto-char a)
             (insert "here!")))))
 
@@ -639,7 +639,7 @@ Wrong Ex.:
         (deferred:nextc it
           (lambda (x)
             (insert "Time: %s " x) ; 'insert' may not be in the *Message* buffer!
-          )))) 
+          ))))
 
 In this case, using lexical scope macros to access the buffer variable, you can change the buffer in the deferred task.
 
@@ -658,7 +658,7 @@ Corrected:
 
 However the dynamic connection is a powerful feature, sometimes it causes bugs of the wrong execution order, because of returning not intended deferred objects.
 
-Then, you should watch the return values of the deferred tasks not to cause an unexpected dynamic connection. 
+Then, you should watch the return values of the deferred tasks not to cause an unexpected dynamic connection.
 
 ### Debugging ###
 

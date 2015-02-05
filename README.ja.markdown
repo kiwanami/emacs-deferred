@@ -1,7 +1,7 @@
 # deferred.el #
 
 deferred.elは非同期処理を抽象化して書きやすくするためのライブラリです。APIや
-実装については 
+実装については
 [JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45さん)と
 [Mochikit.Async](http://mochikit.com/doc/html/MochiKit/Async.html
 "Mochikit.Async") (by Bob Ippolitoさん)を参考にしています。
@@ -30,10 +30,10 @@ eval-last-sexp (C-x C-e) などで実行してみてください。
 Chain:
 
     (deferred:$
-      (deferred:next 
+      (deferred:next
         (lambda () (message "deferred start")))
       (deferred:nextc it
-        (lambda () 
+        (lambda ()
           (message "chain 1")
           1))
       (deferred:nextc it
@@ -93,14 +93,14 @@ GNUのトップページのHTMLを取ってきて、現在のバッファに貼�
 HTTP GET:
 
     (require 'url)
-    
+
     (deferred:$
       (deferred:url-retrieve "http://www.gnu.org")
       (deferred:nextc it
         (lambda (buf)
           (insert  (with-current-buffer buf (buffer-string)))
           (kill-buffer buf))))
-    
+
 ### 画像 ###
 
 googleの画像を取ってきてそのままバッファに貼り付けます。
@@ -111,13 +111,13 @@ Get an image:
       (deferred:url-retrieve "http://www.google.co.jp/intl/en_com/images/srpr/logo1w.png")
       (deferred:nextc it
         (lambda (buf)
-          (insert-image 
-           (create-image 
+          (insert-image
+           (create-image
             (let ((data (with-current-buffer buf (buffer-string))))
               (substring data (+ (string-match "\n\n" data) 2)))
             'png t))
           (kill-buffer buf))))
-    
+
 ### 並列 ###
 
 2つの画像を取ってきて、結果がそろったところで各画像のファイルサイズを現在のバッファに表示します。
@@ -133,9 +133,9 @@ Parallel deferred:
       (deferred:nextc it
         (lambda (buffers)
           (loop for i in buffers
-                do 
-                (insert 
-                 (format 
+                do
+                (insert
+                 (format
                   "size: %s\n"
                   (with-current-buffer i (length (buffer-string)))))
                 (kill-buffer i)))))
@@ -145,7 +145,7 @@ Parallel deferred:
 * 次の処理には結果がリストで渡されます。
  * 順番は保持されます
  * alistを渡して名前で結果を選ぶことも出来ます
-    
+
 ### deferred組み合わせ、try-catch-finally ###
 
 外部プロセスの wget で画像を取ってきて、ImageMagic の convert コマンドでリサイズし、バッファに画像を表示します。（wget, convertが無いと動きません）
@@ -153,8 +153,8 @@ deferred を組み合わせて、非同期処理の try-catch のような構造
 
 Get an image by wget and resize by ImageMagick:
 
-    (deferred:$ 
-    
+    (deferred:$
+
       ;; try
       (deferred:$
         (deferred:process "wget" "-O" "a.jpg" "http://www.gnu.org/software/emacs/tour/images/splash.png")
@@ -164,12 +164,12 @@ Get an image by wget and resize by ImageMagick:
           (lambda ()
             (clear-image-cache)
             (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
-    
+
       ;; catch
-      (deferred:error it ; 
-        (lambda (err) 
+      (deferred:error it ;
+        (lambda (err)
           (insert "Can not get a image! : " err)))
-    
+
       ;; finally
       (deferred:nextc it
         (lambda ()
@@ -251,17 +251,17 @@ Loop and animation:
       (deferred:$
         (deferred:next
           (lambda (x) (message "Animation started.")))
-    
+
         (deferred:nextc it
           (deferred:lambda (x)
             (save-excursion
               (when (< 0 count)
                 (goto-char pos) (delete-char 1))
-              (insert (char-to-string 
+              (insert (char-to-string
                        (aref anm (% count (length anm))))))
             (if (> end (incf count)) ; 止める場合はdeferredでないものを返す（この場合はnil）
                 (deferred:nextc (deferred:wait wait-time) self)))) ; 続けるときはdeferredを返す
-    
+
         (deferred:nextc it
           (lambda (x)
             (save-excursion
@@ -286,7 +286,7 @@ Loop and animation:
    * 返値：deferredオブジェクト
    * 引数の関数をコールバックとしてラップしたdeferredオブジェクトを生成して返します。また実行キューに入れて非同期実行をスケジュールします。
       * →関数を非同期で実行します。
- 
+
 
 * deferred:nextc (d callback)
    * 引数：
@@ -573,7 +573,7 @@ lexical-let 例:
       (deferred:$
         (deferred:wait 1000)
         (deferred:nextc it
-          (lambda (x) 
+          (lambda (x)
             (goto-char a)
             (insert "here!")))))
 
@@ -591,7 +591,7 @@ save-execursion や with-current-buffer など、S式の範囲で状態を保持
         (deferred:nextc it
           (lambda (x)
             (insert "Time: %s " x) ; ここは *Message* バッファとは限らない！
-          )))) 
+          ))))
 
 
 このような場合は、レキシカルスコープなどでdeferredの中にバッファオブジェクトを持って行き、その中でバッファを切り替える必要があります。
