@@ -8,14 +8,7 @@ The API and implementations were translated from
 
 ## Installation ##
 
-Put 'deferred.el' into your 'load-path'.
-
-If you have [auto-install.el](http://www.emacswiki.org/emacs/auto-install.el "auto-install.el]"), evaluating a following s-expression, you can install immediately.
-
-Install by auto-install:
-
-    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
-
+You can install deferred.el from [MELPA](http://melpa.org) by package.el.
 
 ## Sample codes ##
 

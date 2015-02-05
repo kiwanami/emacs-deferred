@@ -8,15 +8,7 @@ event management.
 
 ## Installation ##
 
-Put 'deferred.el' and 'concurrent.el' into your 'load-path'.
-
-If you have [auto-install.el](http://www.emacswiki.org/emacs/auto-install.el "auto-install.el]"), evaluating a following s-expression, you can install immediately.
-
-Install by auto-install:
-
-    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
-    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/concurrent.el")
-
+You can install concurrent.el from [MELPA](http://melpa.org) by package.el.
 
 ## Sample codes ##
 

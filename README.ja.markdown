@@ -8,14 +8,7 @@ deferred.elは非同期処理を抽象化して書きやすくするためのラ
 
 ## インストール ##
 
-deferred.elをload-pathに置いてください。
-
-[auto-install.el](http://d.hatena.ne.jp/rubikitch/20091221/autoinstall "auto-install.el]") を使うことで、以下の式を実行することでインストールできます。
-
-インストール実行:
-
-    (auto-install-from-url "https://github.com/kiwanami/emacs-deferred/raw/master/deferred.el")
-
+deferred.elは package.elを使って, [MELPA](http://melpa.org)からインストールすることができます.
 
 ## 使い方例 ##
 
