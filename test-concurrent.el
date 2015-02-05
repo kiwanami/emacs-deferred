@@ -83,7 +83,7 @@
      (deferred:callback dfinish
        (and (or (equal '(1 2 10 99) result) result)
             (let ((elapsed-time (- (float-time) start-time)))
-              (or (and (< 1.0 elapsed-time) (< elapsed-time 4)) elapsed-time)))))
+              (or (and (< 1.0 elapsed-time) (< elapsed-time 6)) elapsed-time)))))
     dfinish))
 
 ;; (cc:debug (cc:test-thread) "Thread : %s" x)
