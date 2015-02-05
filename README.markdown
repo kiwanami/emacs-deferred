@@ -1,4 +1,4 @@
-# deferred.el #
+# deferred.el # [![travis badge][travis-badge]][travis-link]
 
 'deferred.el' provides facilities to manage asynchronous tasks.
 The API and implementations were translated from
@@ -709,3 +709,6 @@ Following documents are good introduction to deferred.
 
 (C) 2010, 2011  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net
+
+[travis-badge]: https://travis-ci.org/kiwanami/emacs-deferred.svg
+[travis-link]: https://travis-ci.org/kiwanami/emacs-deferred
