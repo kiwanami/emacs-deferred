@@ -25,21 +25,23 @@ lexical-letを評価するとその場でアニメーションします。引数
 
 Thread:
 
-    (lexical-let
-        ((count 0) (anm "-/|\\-")
-         (end 50) (pos (point)))
-      (cc:thread
-       60
-       (message "Animation started.")
-       (while (> end (incf count))
-         (save-excursion
-           (when (< 1 count)
-             (goto-char pos) (delete-char 1))
-           (insert (char-to-string
-                    (aref anm (% count (length anm)))))))
-       (save-excursion
+```el
+(lexical-let
+    ((count 0) (anm "-/|\\-")
+     (end 50) (pos (point)))
+  (cc:thread
+   60
+   (message "Animation started.")
+   (while (> end (incf count))
+     (save-excursion
+       (when (< 1 count)
          (goto-char pos) (delete-char 1))
-       (message "Animation finished.")))
+       (insert (char-to-string
+                (aref anm (% count (length anm)))))))
+   (save-excursion
+     (goto-char pos) (delete-char 1))
+   (message "Animation finished.")))
+```
 
 whileを使うことでスレッドをループさせることが出来ます。whileの中身は一気に実行されます。
 
@@ -52,24 +54,26 @@ fib-genにジェネレーターを作ります。ジェネレーター生成body
 
 Generator:
 
-    (setq fib-list nil)
-    (setq fib-gen
-          (lexical-let ((a1 0) (a2 1))
-            (cc:generator
-             (lambda (x) (push x fib-list)) ; コールバックで結果受け取り
-             (yield a1)
-             (yield a2)
-             (while t
-               (let ((next (+ a1 a2)))
-                 (setq a1 a2
-                       a2 next)
-                 (yield next))))))
+```el
+(setq fib-list nil)
+(setq fib-gen
+      (lexical-let ((a1 0) (a2 1))
+        (cc:generator
+         (lambda (x) (push x fib-list)) ; コールバックで結果受け取り
+         (yield a1)
+         (yield a2)
+         (while t
+           (let ((next (+ a1 a2)))
+             (setq a1 a2
+                   a2 next)
+             (yield next))))))
 
-    (funcall fib-gen) ; 何度か呼んでみる
-    (funcall fib-gen) (funcall fib-gen)
-    (funcall fib-gen) (funcall fib-gen)
+(funcall fib-gen) ; 何度か呼んでみる
+(funcall fib-gen) (funcall fib-gen)
+(funcall fib-gen) (funcall fib-gen)
 
-    fib-list ; => (3 2 1 1 0)
+fib-list ; => (3 2 1 1 0)
+```
 
 ### Semaphoreの例
 
@@ -77,31 +81,33 @@ cc:semaphore-acquire 関数が deferred を返すので、それに続けて実�
 
 Semaphore:
 
-    ;; permit=1のセマフォ作成
-    (setq smp (cc:semaphore-create 1))
+```el
+;; permit=1のセマフォ作成
+(setq smp (cc:semaphore-create 1))
 
-    ;; 続けて3つ実行しようとする
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go1")))
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go2")))
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go3")))
+;; 続けて3つ実行しようとする
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go1")))
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go2")))
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go3")))
 
-    ;; => 1つ目だけ実行されて go1 が表示される
+;; => 1つ目だけ実行されて go1 が表示される
 
-    (cc:semaphore-release smp) ; permitを返す
+(cc:semaphore-release smp) ; permitを返す
 
-    ;; => 2つ目が実行されて go2 が表示される
+;; => 2つ目が実行されて go2 が表示される
 
-    (cc:semaphore-waiting-deferreds smp) ; go3 を表示するdeferred
+(cc:semaphore-waiting-deferreds smp) ; go3 を表示するdeferred
 
-    (cc:semaphore-release-all smp) ; => permitを初期化して go3 を表示するdeferredを返す
+(cc:semaphore-release-all smp) ; => permitを初期化して go3 を表示するdeferredを返す
 
-    (cc:semaphore-waiting-deferreds smp) ; => nil
+(cc:semaphore-waiting-deferreds smp) ; => nil
+```
 
 ### Dataflowの例：
 
@@ -109,92 +115,95 @@ cc:dataflow-environment 関数で変数を格納する「環境」を作りま�
 
 Dataflow:
 
-    (setq dfenv (cc:dataflow-environment))
+```el
+(setq dfenv (cc:dataflow-environment))
 
-    ;; ○基本の使い方
+;; ○基本の使い方
 
-    ;; ↓同期的に値を取得。ブロックしない。
-    (cc:dataflow-get-sync dfenv "abc") ; => nil まだ値が無い。
+;; ↓同期的に値を取得。ブロックしない。
+(cc:dataflow-get-sync dfenv "abc") ; => nil まだ値が無い。
 
-    (deferred:$ ; abc という値を取ってきて表示する処理
-      (cc:dataflow-get dfenv "abc")
-      (deferred:nextc it
-        (lambda (x) (message "Got abc : %s" x))))
-    ;; => 値がないので処理はブロックしたまま
+(deferred:$ ; abc という値を取ってきて表示する処理
+  (cc:dataflow-get dfenv "abc")
+  (deferred:nextc it
+    (lambda (x) (message "Got abc : %s" x))))
+;; => 値がないので処理はブロックしたまま
 
-    (cc:dataflow-set dfenv "abc" 256) ; 値をセット
-    ;; => ここで先ほどブロックしていた処理が再開し、 "Got abc : 256" が表示される
+(cc:dataflow-set dfenv "abc" 256) ; 値をセット
+;; => ここで先ほどブロックしていた処理が再開し、 "Got abc : 256" が表示される
 
-    (cc:dataflow-get-sync dfenv "abc") ; => 256
+(cc:dataflow-get-sync dfenv "abc") ; => 256
 
-    (cc:dataflow-clear dfenv "abc") ; 値を未バインドに戻す
+(cc:dataflow-clear dfenv "abc") ; 値を未バインドに戻す
 
-    (cc:dataflow-get-sync dfenv "abc") ; => nil
+(cc:dataflow-get-sync dfenv "abc") ; => nil
 
-    ;; ○リストをキーにする
+;; ○リストをキーにする
 
-    (deferred:$
-      (cc:dataflow-get dfenv '("http://example.com/a.jpg" 300))
-      (deferred:nextc it
-        (lambda (x) (message "a.jpg:300 OK %s" x))))
+(deferred:$
+  (cc:dataflow-get dfenv '("http://example.com/a.jpg" 300))
+  (deferred:nextc it
+    (lambda (x) (message "a.jpg:300 OK %s" x))))
 
-    (cc:dataflow-set dfenv '("http://example.com/a.jpg" 300) 'jpeg)
+(cc:dataflow-set dfenv '("http://example.com/a.jpg" 300) 'jpeg)
 
-    ;; => a.jpg:300 OK jpeg
+;; => a.jpg:300 OK jpeg
 
-    ;; ○2つの値を待ち受ける
+;; ○2つの値を待ち受ける
 
-    (deferred:$ ; abc, def の2つの値を使う
-      (deferred:parallel
-        (cc:dataflow-get dfenv "abc")
-        (cc:dataflow-get dfenv "def"))
-      (deferred:nextc it
-        (lambda (values)
-          (apply 'message "Got values : %s, %s" values)
-          (apply '+ values)))
-      (deferred:nextc it
-        (lambda (x) (insert (format ">> %s" x)))))
-    ;; => もちろんブロックする
+(deferred:$ ; abc, def の2つの値を使う
+  (deferred:parallel
+    (cc:dataflow-get dfenv "abc")
+    (cc:dataflow-get dfenv "def"))
+  (deferred:nextc it
+    (lambda (values)
+      (apply 'message "Got values : %s, %s" values)
+      (apply '+ values)))
+  (deferred:nextc it
+    (lambda (x) (insert (format ">> %s" x)))))
+;; => もちろんブロックする
 
-    (cc:dataflow-get-waiting-keys dfenv) ; => ("def" "abc")
-    (cc:dataflow-get-avalable-pairs dfenv) ; => ((("http://example.com/a.jpg" 300) . jpeg))
+(cc:dataflow-get-waiting-keys dfenv) ; => ("def" "abc")
+(cc:dataflow-get-avalable-pairs dfenv) ; => ((("http://example.com/a.jpg" 300) . jpeg))
 
-    (cc:dataflow-set dfenv "abc" 128) ; ここではまだブロックしたまま
-    (cc:dataflow-set dfenv "def" 256) ; ここでやっと動く
-    ;; => Got values : 128, 256
+(cc:dataflow-set dfenv "abc" 128) ; ここではまだブロックしたまま
+(cc:dataflow-set dfenv "def" 256) ; ここでやっと動く
+;; => Got values : 128, 256
+```
 
 ### Signalの例：
 
 cc:signal-channel でシグナルを流すチャンネルを作成します。その後、signalに応答する処理を接続していきます。
 
-    ;; シグナルのチャンネルを作成
-    (setq channel (cc:signal-channel))
+```el
+;; シグナルのチャンネルを作成
+(setq channel (cc:signal-channel))
 
-    (cc:signal-connect ; foo というシグナルを拾う
-     channel 'foo
-     (lambda (event) (message "Signal : %S" event)))
+(cc:signal-connect ; foo というシグナルを拾う
+ channel 'foo
+ (lambda (event) (message "Signal : %S" event)))
 
-    (cc:signal-connect
-     channel t  ; t にするとすべてのシグナルを拾う
-     (lambda (event)
-       (destructuring-bind (event-name (args)) event
-         (message "Listener : %S / %S" event-name args))))
+(cc:signal-connect
+ channel t  ; t にするとすべてのシグナルを拾う
+ (lambda (event)
+   (destructuring-bind (event-name (args)) event
+     (message "Listener : %S / %S" event-name args))))
 
-    (deferred:$ ; deferred で非同期タスクを接続できる
-      (cc:signal-connect channel 'foo)
-      (deferred:nextc it
-        (lambda (x) (message "Deferred Signal : %S" x))))
+(deferred:$ ; deferred で非同期タスクを接続できる
+  (cc:signal-connect channel 'foo)
+  (deferred:nextc it
+    (lambda (x) (message "Deferred Signal : %S" x))))
 
-    (cc:signal-send channel 'foo "hello signal!")
-    ;; =>
-    ;; Listener : foo / "hello signal!"
-    ;; Signal : (foo ("hello signal!"))
-    ;; Deferred Signal : (foo ("hello signal!"))
+(cc:signal-send channel 'foo "hello signal!")
+;; =>
+;; Listener : foo / "hello signal!"
+;; Signal : (foo ("hello signal!"))
+;; Deferred Signal : (foo ("hello signal!"))
 
-    (cc:signal-send channel 'some "some signal!")
-    ;; =>
-    ;; Listener : some / "some signal!"
-
+(cc:signal-send channel 'some "some signal!")
+;; =>
+;; Listener : some / "some signal!"
+```
 
 dataflowの内部には、変数へのアクセスやバインドのシグナルを発信するchannelがあります。これを使って、未バインドの変数に値を作成してセットするようなことが出来ます。
 

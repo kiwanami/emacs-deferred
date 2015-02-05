@@ -29,21 +29,23 @@ Evaluating the lexical-let in the blow code, the animation starts. After few sec
 
 Thread:
 
-    (lexical-let
-        ((count 0) (anm "-/|\\-")
-         (end 50) (pos (point)))
-      (cc:thread
-       60
-       (message "Animation started.")
-       (while (> end (incf count))
-         (save-excursion
-           (when (< 1 count)
-             (goto-char pos) (delete-char 1))
-           (insert (char-to-string
-                    (aref anm (% count (length anm)))))))
-       (save-excursion
+```el
+(lexical-let
+    ((count 0) (anm "-/|\\-")
+     (end 50) (pos (point)))
+  (cc:thread
+   60
+   (message "Animation started.")
+   (while (> end (incf count))
+     (save-excursion
+       (when (< 1 count)
          (goto-char pos) (delete-char 1))
-       (message "Animation finished.")))
+       (insert (char-to-string
+                (aref anm (% count (length anm)))))))
+   (save-excursion
+     (goto-char pos) (delete-char 1))
+   (message "Animation finished.")))
+```
 
 Using 'while' clause in the body content, one can make a loop in the thread.
 
@@ -58,24 +60,26 @@ Calling generator object as a function, the evaluation process resumes.
 
 Generator:
 
-    (setq fib-list nil)
-    (setq fib-gen
-          (lexical-let ((a1 0) (a2 1))
-            (cc:generator
-             (lambda (x) (push x fib-list)) ; Receiving values as a callback function
-             (yield a1)
-             (yield a2)
-             (while t
-               (let ((next (+ a1 a2)))
-                 (setq a1 a2
-                       a2 next)
-                 (yield next))))))
+```el
+(setq fib-list nil)
+(setq fib-gen
+      (lexical-let ((a1 0) (a2 1))
+        (cc:generator
+         (lambda (x) (push x fib-list)) ; Receiving values as a callback function
+         (yield a1)
+         (yield a2)
+         (while t
+           (let ((next (+ a1 a2)))
+             (setq a1 a2
+                   a2 next)
+             (yield next))))))
 
-    (funcall fib-gen) ; calling 5 times
-    (funcall fib-gen) (funcall fib-gen)
-    (funcall fib-gen) (funcall fib-gen)
+(funcall fib-gen) ; calling 5 times
+(funcall fib-gen) (funcall fib-gen)
+(funcall fib-gen) (funcall fib-gen)
 
-    fib-list ; => (3 2 1 1 0)
+fib-list ; => (3 2 1 1 0)
+```
 
 ### Semaphore
 
@@ -85,32 +89,34 @@ The subsequent codes and comments show how the semaphore object works.
 
 Semaphore:
 
-    ;; Create a semaphore with permit=1.
-    (setq smp (cc:semaphore-create 1))
+```el
+;; Create a semaphore with permit=1.
+(setq smp (cc:semaphore-create 1))
 
-    ;; Start three tasks with acquiring permit.
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go1")))
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go2")))
-    (deferred:nextc (cc:semaphore-acquire smp)
-      (lambda(x)
-        (message "go3")))
+;; Start three tasks with acquiring permit.
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go1")))
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go2")))
+(deferred:nextc (cc:semaphore-acquire smp)
+  (lambda(x)
+    (message "go3")))
 
-    ;; => Only the first task is executed and displays "go1".
-    ;;    Rest ones are blocked.
+;; => Only the first task is executed and displays "go1".
+;;    Rest ones are blocked.
 
-    (cc:semaphore-release smp) ; Releasing one permit
+(cc:semaphore-release smp) ; Releasing one permit
 
-    ;; => The second task is executed, then, displays "go2".
+;; => The second task is executed, then, displays "go2".
 
-    (cc:semaphore-waiting-deferreds smp) ; => The third task object
+(cc:semaphore-waiting-deferreds smp) ; => The third task object
 
-    (cc:semaphore-release-all smp) ; => Reset permits and return the third task object
+(cc:semaphore-release-all smp) ; => Reset permits and return the third task object
 
-    (cc:semaphore-waiting-deferreds smp) ; => nil
+(cc:semaphore-waiting-deferreds smp) ; => nil
+```
 
 ### Dataflow
 
@@ -121,60 +127,62 @@ Any objects can be variable keys in the environment. This sample code uses strin
 
 Dataflow:
 
-    ;; Create an environment.
-    (setq dfenv (cc:dataflow-environment))
+```el
+;; Create an environment.
+(setq dfenv (cc:dataflow-environment))
 
-    ;;## Basic usage
+;;## Basic usage
 
-    ;; Referring a variable synchronously. This function doesn't block.
-    (cc:dataflow-get-sync dfenv "abc") ; => nil
+;; Referring a variable synchronously. This function doesn't block.
+(cc:dataflow-get-sync dfenv "abc") ; => nil
 
-    (deferred:$ ; Start the task that gets the value of 'abc' and that displays the value.
-      (cc:dataflow-get dfenv "abc")
-      (deferred:nextc it
-        (lambda (x) (message "Got abc : %s" x))))
-    ;; => This task is blocked because no value is bound to the variable 'abc'.
+(deferred:$ ; Start the task that gets the value of 'abc' and that displays the value.
+  (cc:dataflow-get dfenv "abc")
+  (deferred:nextc it
+    (lambda (x) (message "Got abc : %s" x))))
+;; => This task is blocked because no value is bound to the variable 'abc'.
 
-    (cc:dataflow-set dfenv "abc" 256) ; Binding a value to the variable 'abc'.
-    ;; => The blocked task resumes and displays "Got abc : 256".
+(cc:dataflow-set dfenv "abc" 256) ; Binding a value to the variable 'abc'.
+;; => The blocked task resumes and displays "Got abc : 256".
 
-    (cc:dataflow-get-sync dfenv "abc") ; => 256
+(cc:dataflow-get-sync dfenv "abc") ; => 256
 
-    (cc:dataflow-clear dfenv "abc") ; unbind the variable 'abc'
+(cc:dataflow-clear dfenv "abc") ; unbind the variable 'abc'
 
-    (cc:dataflow-get-sync dfenv "abc") ; => nil
+(cc:dataflow-get-sync dfenv "abc") ; => nil
 
-    ;;## Complex key
+;;## Complex key
 
-    (deferred:$
-      (cc:dataflow-get dfenv '("http://example.com/a.jpg" 300))
-      (deferred:nextc it
-        (lambda (x) (message "a.jpg:300 OK %s" x))))
+(deferred:$
+  (cc:dataflow-get dfenv '("http://example.com/a.jpg" 300))
+  (deferred:nextc it
+    (lambda (x) (message "a.jpg:300 OK %s" x))))
 
-    (cc:dataflow-set dfenv '("http://example.com/a.jpg" 300) 'jpeg)
+(cc:dataflow-set dfenv '("http://example.com/a.jpg" 300) 'jpeg)
 
-    ;; => a.jpg:300 OK jpeg
+;; => a.jpg:300 OK jpeg
 
-    ;;## Waiting for two variables
+;;## Waiting for two variables
 
-    (deferred:$ ; Start the task that refers two variables, 'abc' and 'def'.
-      (deferred:parallel
-        (cc:dataflow-get dfenv "abc")
-        (cc:dataflow-get dfenv "def"))
-      (deferred:nextc it
-        (lambda (values)
-          (apply 'message "Got values : %s, %s" values)
-          (apply '+ values)))
-      (deferred:nextc it
-        (lambda (x) (insert (format ">> %s" x)))))
-    ;; => This task is blocked.
+(deferred:$ ; Start the task that refers two variables, 'abc' and 'def'.
+  (deferred:parallel
+    (cc:dataflow-get dfenv "abc")
+    (cc:dataflow-get dfenv "def"))
+  (deferred:nextc it
+    (lambda (values)
+      (apply 'message "Got values : %s, %s" values)
+      (apply '+ values)))
+  (deferred:nextc it
+    (lambda (x) (insert (format ">> %s" x)))))
+;; => This task is blocked.
 
-    (cc:dataflow-get-waiting-keys dfenv) ; => ("def" "abc")
-    (cc:dataflow-get-avalable-pairs dfenv) ; => ((("http://example.com/a.jpg" 300) . jpeg))
+(cc:dataflow-get-waiting-keys dfenv) ; => ("def" "abc")
+(cc:dataflow-get-avalable-pairs dfenv) ; => ((("http://example.com/a.jpg" 300) . jpeg))
 
-    (cc:dataflow-set dfenv "abc" 128) ; Binding one value. The task is still blocked.
-    (cc:dataflow-set dfenv "def" 256) ; Binding the next value. Then, the task resumes.
-    ;; => Got values : 128, 256
+(cc:dataflow-set dfenv "abc" 128) ; Binding one value. The task is still blocked.
+(cc:dataflow-set dfenv "def" 256) ; Binding the next value. Then, the task resumes.
+;; => Got values : 128, 256
+```
 
 ### Signal
 
@@ -183,34 +191,35 @@ Then, one can connect receivers and send signals.
 
 Signal:
 
-    ;; Create a channel.
-    (setq channel (cc:signal-channel))
+```el
+;; Create a channel.
+(setq channel (cc:signal-channel))
 
-    (cc:signal-connect ; Connect the receiver for the signal 'foo.
-     channel 'foo
-     (lambda (event) (message "Signal : %S" event)))
+(cc:signal-connect ; Connect the receiver for the signal 'foo.
+ channel 'foo
+ (lambda (event) (message "Signal : %S" event)))
 
-    (cc:signal-connect
-     channel t  ; The signal symbol 't' means any signals.
-     (lambda (event)
-       (destructuring-bind (event-name (args)) event
-         (message "Listener : %S / %S" event-name args))))
+(cc:signal-connect
+ channel t  ; The signal symbol 't' means any signals.
+ (lambda (event)
+   (destructuring-bind (event-name (args)) event
+     (message "Listener : %S / %S" event-name args))))
 
-    (deferred:$ ; Connect the deferred task.
-      (cc:signal-connect channel 'foo)
-      (deferred:nextc it
-        (lambda (x) (message "Deferred Signal : %S" x))))
+(deferred:$ ; Connect the deferred task.
+  (cc:signal-connect channel 'foo)
+  (deferred:nextc it
+    (lambda (x) (message "Deferred Signal : %S" x))))
 
-    (cc:signal-send channel 'foo "hello signal!")
-    ;; =>
-    ;; Listener : foo / "hello signal!"
-    ;; Signal : (foo ("hello signal!"))
-    ;; Deferred Signal : (foo ("hello signal!"))
+(cc:signal-send channel 'foo "hello signal!")
+;; =>
+;; Listener : foo / "hello signal!"
+;; Signal : (foo ("hello signal!"))
+;; Deferred Signal : (foo ("hello signal!"))
 
-    (cc:signal-send channel 'some "some signal!")
-    ;; =>
-    ;; Listener : some / "some signal!"
-
+(cc:signal-send channel 'some "some signal!")
+;; =>
+;; Listener : some / "some signal!"
+```
 
 Dataflow objects have the own channel to notify accessing to the variables.
 Receiving the signals for referring unbound variables, one can create values on demand.
