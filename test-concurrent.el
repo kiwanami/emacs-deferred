@@ -31,7 +31,7 @@
 ;; generator
 
 (defun cc:fib-gen (callback)
-  (lexical-let ((a1 0) (a2 1) 
+  (lexical-let ((a1 0) (a2 1)
                 (callback callback))
         (cc:generator
          callback
@@ -45,15 +45,15 @@
 
 (defun cc:test-fib-gen ()
   (lexical-let*
-      ((count 0) 
+      ((count 0)
        (dfinish (deferred:new))
        gen
-       (cc (lambda (x) 
+       (cc (lambda (x)
              (cond
               ((= count 10)
-               (deferred:callback 
-                 dfinish 
-                 (if (= x 55) t 
+               (deferred:callback
+                 dfinish
+                 (if (= x 55) t
                    (format "Fib 10 = 55 -> %s" x))))
               (t
                (incf count)
@@ -67,13 +67,13 @@
 ;; thread
 
 (defun cc:test-thread ()
-  (lexical-let 
+  (lexical-let
       ((dfinish (deferred:new))
        (result nil) (start-time (float-time))
        (count 0) (end 20))
     (push 1 result)
-    (cc:thread 
-     60 
+    (cc:thread
+     60
      (push 2 result)
      (while (> end (incf count))
        (when (= 0 (% count 10))
@@ -93,7 +93,7 @@
 (defun cc:test-semaphore1 ()
   (lexical-let*
       ((result nil)
-       (dfinish (deferred:new 
+       (dfinish (deferred:new
                   (lambda (x)
                     (setq result (reverse result))
                     (or (equal '(1 2 5 6 (size . 1) 3 7 8 canceled (size . 0)) result)
@@ -111,7 +111,7 @@
 
     (deferred:$
       (deferred:next
-        (lambda (x) 
+        (lambda (x)
           (push 5 result)
           (cc:semaphore-release smp)
           (push 6 result)))
@@ -137,7 +137,7 @@
 (defun cc:test-semaphore2 ()
   (lexical-let*
       ((result nil)
-       (dfinish (deferred:new 
+       (dfinish (deferred:new
                   (lambda (x)
                     (setq result (reverse result))
                     (or (equal '(0 a b c d e f g) result)
@@ -146,8 +146,8 @@
 
     (push 0 result)
 
-    (cc:semaphore-with 
-     smp (lambda (x) 
+    (cc:semaphore-with
+     smp (lambda (x)
            (deferred:nextc (cc:semaphore-acquire smp)
              (lambda (x)
                (push 'c result)
@@ -157,20 +157,20 @@
              (deferred:wait 100)
              (lambda (x) (push 'b result)))))
 
-    (cc:semaphore-with 
-     smp (lambda (x) 
+    (cc:semaphore-with
+     smp (lambda (x)
            (deferred:nextc (cc:semaphore-acquire smp)
-             (lambda (x) 
+             (lambda (x)
                (push 'g result)
                (cc:semaphore-release smp)
                (deferred:callback dfinish)))
              (push 'd result)
              (deferred:nextc
                (deferred:wait 100)
-               (lambda (x) 
+               (lambda (x)
                  (push 'e result)
                  (error "SMP CC ERR"))))
-     (lambda (e) 
+     (lambda (e)
        (destructuring-bind (sym msg) e
          (when (and (eq 'error sym) (equal "SMP CC ERR" msg))
            (push 'f result)))))
@@ -182,10 +182,10 @@
 ;; Dataflow
 
 (defun cc:test-dataflow-simple1 ()
-  (lexical-let* 
+  (lexical-let*
       ((result '(1))
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal '(1 (2 . nil) 4 5 (3 . 256) (6 . 256) (7 . nil)) result)
                         result))))
@@ -195,23 +195,23 @@
 
     (deferred:$
       (deferred:parallel
-        (deferred:$ 
+        (deferred:$
           (cc:dataflow-get dfenv "abc")
           (deferred:nextc it
             (lambda (x) (push (cons 3 x) result))))
         (deferred:$
-          (deferred:next 
-            (lambda (x) 
+          (deferred:next
+            (lambda (x)
               (push 4 result)
               (cc:dataflow-set dfenv "abc" 256)
               (push 5 result)))))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (push (cons 6 (cc:dataflow-get-sync dfenv "abc")) result)
           (cc:dataflow-clear dfenv "abc")
           (push (cons 7 (cc:dataflow-get-sync dfenv "abc")) result)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     dfinish))
@@ -219,10 +219,10 @@
 ;; (cc:debug (cc:test-dataflow-simple1) "Dataflow1 : %s" x)
 
 (defun cc:test-dataflow-simple2 ()
-  (lexical-let* 
+  (lexical-let*
       ((result nil)
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (or (equal '("a.jpg:300 OK jpeg") result)
                         result))))
        (dfenv (cc:dataflow-environment)))
@@ -232,7 +232,7 @@
       (deferred:nextc it
         (lambda (x) (push (format "a.jpg:300 OK %s" x) result)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     (cc:dataflow-set dfenv '("http://example.com/a.jpg" 300) 'jpeg)
@@ -242,10 +242,10 @@
 ;; (cc:debug (cc:test-dataflow-simple2) "Dataflow2 : %s" x)
 
 (defun cc:test-dataflow-simple3 ()
-  (lexical-let* 
+  (lexical-let*
       ((result nil)
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (or (equal '(">> 384") result)
                         result))))
        (dfenv (cc:dataflow-environment)))
@@ -260,11 +260,11 @@
       (deferred:nextc it
         (lambda (x) (push (format ">> %s" x) result)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     (deferred:nextc (deferred:wait 0.2)
-      (lambda (x) 
+      (lambda (x)
         (cc:dataflow-set dfenv "def" 128)
         (cc:dataflow-set dfenv "abc" 256)
         (cc:dataflow-set dfenv "aaa" 512)
@@ -275,10 +275,10 @@
 ;; (cc:debug (cc:test-dataflow-simple3) "Dataflow3 : %s" x)
 
 (defun cc:test-dataflow-simple4 ()
-  (lexical-let* 
+  (lexical-let*
       ((result nil)
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (or (equal '(">> 3") result)
                         result))))
        (dfenv (cc:dataflow-environment)))
@@ -294,11 +294,11 @@
       (deferred:nextc it
         (lambda (x) (push (format ">> %s" x) result)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     (deferred:nextc (deferred:wait 0.2)
-      (lambda (x) 
+      (lambda (x)
         (cc:dataflow-set dfenv "abc" 1)
         ))
 
@@ -307,17 +307,17 @@
 ;; (cc:debug (cc:test-dataflow-simple4) "Dataflow4 : %s" x)
 
 (defun cc:test-dataflow-signal ()
-  (lexical-let* 
+  (lexical-let*
       ((result '(1))
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal
-                         '(1 
+                         '(1
                            (2 . nil)
                            (get-first ("abc"))
                            (get-waiting ("abc"))
-                           4 5 
+                           4 5
                            (set ("abc"))
                            (3 . 256)
                            6 7
@@ -337,18 +337,18 @@
 
     (deferred:$
       (deferred:parallel
-        (deferred:$ 
+        (deferred:$
           (cc:dataflow-get dfenv "abc")
           (deferred:nextc it
             (lambda (x) (push (cons 3 x) result))))
         (deferred:$
-          (deferred:next 
-            (lambda (x) 
+          (deferred:next
+            (lambda (x)
               (push 4 result)
               (cc:dataflow-set dfenv "abc" 256)
               (push 5 result)))))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (push 6 result)
           (cc:dataflow-get dfenv "abc")
           (push 7 result)))
@@ -361,7 +361,7 @@
         (lambda (x)
           (cc:dataflow-clear-all dfenv)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     dfinish))
@@ -370,10 +370,10 @@
 
 
 (defun cc:test-dataflow-parent1 ()
-  (lexical-let* 
+  (lexical-let*
       ((result '(1))
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal
                          '(1
@@ -390,21 +390,21 @@
 
     (cc:dataflow-set dfenv-parent "abc" 128)
 
-    (deferred:$ 
+    (deferred:$
       (deferred:parallel
-        (deferred:$ 
+        (deferred:$
           (cc:dataflow-get dfenv "aaa")
           (deferred:nextc it
             (lambda (x) (push (cons 'get x) result))))
         (deferred:$
-          (deferred:next 
-            (lambda (x) 
+          (deferred:next
+            (lambda (x)
               (push (cons 'available-parent (cc:dataflow-get-avalable-pairs dfenv-parent)) result)
               (push (cons 'available-child  (cc:dataflow-get-avalable-pairs dfenv)) result)
               (push (cons 'waiting-parent (cc:dataflow-get-waiting-keys dfenv-parent)) result)
               (push (cons 'waiting-child  (cc:dataflow-get-waiting-keys dfenv)) result)))
-          (deferred:next 
-            (lambda (x) 
+          (deferred:next
+            (lambda (x)
               (cc:dataflow-set dfenv-parent "aaa" 256)
               (push (cons 'get-sync (cc:dataflow-get-sync dfenv "aaa")) result)))))
       (deferred:nextc it
@@ -415,10 +415,10 @@
 ;; (cc:debug (cc:test-dataflow-parent1) "Dataflow Parent1 : %s" x)
 
 (defun cc:test-dataflow-parent2 ()
-  (lexical-let* 
+  (lexical-let*
       ((result '())
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal
                          '("parent get 256" "child get 256") result)
@@ -449,10 +449,10 @@
 ;; Signal
 
 (defun cc:test-signal1 ()
-  (lexical-let* 
+  (lexical-let*
       ((result '())
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal
                           '(
@@ -465,10 +465,10 @@
        (channel (cc:signal-channel "child")))
 
     (cc:signal-connect channel 'ev1
-                       (lambda (event) 
+                       (lambda (event)
                          (push (cons 'sig event) result)))
-    (cc:signal-connect channel t 
-                       (lambda (event) 
+    (cc:signal-connect channel t
+                       (lambda (event)
                          (push (cons 'ls event) result)))
     (deferred:$
       (cc:signal-connect channel 'ev1)
@@ -477,13 +477,13 @@
 
     (deferred:$
       (deferred:next
-        (lambda (x) 
+        (lambda (x)
           (cc:signal-send channel 'ev1 1)
           (cc:signal-send channel 'ev2 2)))
       (deferred:nextc it
         (lambda (x) (deferred:wait 300)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback dfinish))))
 
     dfinish))
@@ -493,10 +493,10 @@
 ;; (cc:debug (cc:test-signal2) "Signal2 : %s" x)
 
 (defun cc:test-signal2 ()
-  (lexical-let* 
+  (lexical-let*
       ((result nil)
        (dfinish (deferred:new
-                  (lambda (x) 
+                  (lambda (x)
                     (setq result (reverse result))
                     (or (equal
                          '(
@@ -510,7 +510,7 @@
 
                            (ls pev1 (1))
                            (ls ev1 (2))
-                           
+
                            (sig ev1 (2))
                            (def ev1 (3))
                            (ls ev2 (4))
@@ -527,23 +527,23 @@
                        (lambda (event)
                          (push (cons 'psig event) result)))
     (cc:signal-connect parent-channel t
-                       (lambda (event) 
+                       (lambda (event)
                          (push (cons 'pls event) result)))
     (cc:signal-connect channel 'ev1
-                       (lambda (event) 
+                       (lambda (event)
                          (push (cons 'sig event) result)))
-    (cc:signal-connect channel t 
-                       (lambda (event) 
+    (cc:signal-connect channel t
+                       (lambda (event)
                          (push (cons 'ls event) result)))
     (deferred:$
       (cc:signal-connect channel 'ev1)
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (push (cons 'def x) result))))
 
     (deferred:$
       (deferred:next
-        (lambda (x) 
+        (lambda (x)
           (cc:signal-send parent-channel 'pev1 1)
           (cc:signal-send parent-channel 'ev1  2)
           (cc:signal-send channel        'ev1  3)
@@ -552,7 +552,7 @@
       (deferred:nextc it
         (lambda (x) (deferred:wait 300)))
       (deferred:nextc it
-        (lambda (x) 
+        (lambda (x)
           (deferred:callback-post dfinish))))
 
     dfinish))
@@ -592,13 +592,13 @@
                  for name = (car i)
                  for result = (cdr i)
                  with fails = 0
-                 do (insert (format "%s : %s\n" name 
-                                    (if (eq t result) "OK" 
+                 do (insert (format "%s : %s\n" name
+                                    (if (eq t result) "OK"
                                       (format "FAIL > %s" result))))
                  (unless (eq t result) (incf fails))
-                 finally 
+                 finally
                  (goto-char (point-min))
-                 (insert (format "Test Finished : %s\nTests Fails: %s / %s\n" 
+                 (insert (format "Test Finished : %s\nTests Fails: %s / %s\n"
                                  (format-time-string   "%Y/%m/%d %H:%M:%S" (current-time))
                                  fails (length results)))
                  (setq cc:test-fails fails))
@@ -613,4 +613,3 @@
     (error "Test failed")))
 
 ;;(cc:test-all)
-

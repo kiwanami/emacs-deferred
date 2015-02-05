@@ -5,10 +5,10 @@
 ;;; Basic Chain
 
 (deferred:$
-  (deferred:next 
+  (deferred:next
     (lambda () (message "deferred start")))
   (deferred:nextc it
-    (lambda () 
+    (lambda ()
       (message "chain 1")
       1))
   (deferred:nextc it
@@ -61,14 +61,14 @@
   (deferred:url-retrieve "http://www.google.co.jp/intl/en_com/images/srpr/logo1w.png")
   (deferred:nextc it
     (lambda (buf)
-      (insert-image 
-       (create-image 
+      (insert-image
+       (create-image
         (let ((data (with-current-buffer buf (buffer-string))))
           (substring data (+ (string-match "\n\n" data) 2)))
         'png t))
       (kill-buffer buf))))
 
-;; HTTP POST 
+;; HTTP POST
 
 (deferred:$
   (deferred:url-post
@@ -91,16 +91,16 @@
   (deferred:nextc it
     (lambda (buffers)
       (loop for i in buffers
-            do 
-            (insert 
-             (format 
+            do
+            (insert
+             (format
               "size: %s\n"
               (with-current-buffer i (length (buffer-string)))))
             (kill-buffer i)))))
 
 ;; Get an image by wget and resize by ImageMagick
 
-(deferred:$ 
+(deferred:$
 
   ;; try
   (deferred:$
@@ -113,8 +113,8 @@
         (insert-image (create-image (expand-file-name "b.jpg") 'jpeg nil)))))
 
   ;; catch
-  (deferred:error it ; 
-    (lambda (err) 
+  (deferred:error it ;
+    (lambda (err)
       (insert "Can not get a image! : " err)))
 
   ;; finally
@@ -153,7 +153,7 @@
         (save-excursion
           (when (< 0 count)
             (goto-char pos) (delete-char 1))
-          (insert (char-to-string 
+          (insert (char-to-string
                    (aref anm (% count (length anm))))))
         (if (> end (incf count))
             (deferred:nextc (deferred:wait wait-time) self))))
@@ -163,4 +163,3 @@
         (save-excursion
           (goto-char pos) (delete-char 1))
         (message "Animation finished.")))))
-

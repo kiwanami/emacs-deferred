@@ -25,7 +25,7 @@
 
 ;; 'concurrent.el' is a higher level library for concurrent tasks
 ;; based on 'deferred.el'. This library has following features:
-;; 
+;;
 ;; - Generator
 ;; - Green thread
 ;; - Semaphore
@@ -50,14 +50,14 @@
 (put 'cc:aif 'lisp-indent-function 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Generator 
+;; Generator
 
 (defun cc:generator-replace-yield (tree)
   "[internal] Replace `yield' symbols to calling a function in TREE."
   (let (ret)
     (loop for i in tree
           do (cond
-              ((eq i 'yield) 
+              ((eq i 'yield)
                (push 'funcall ret)
                (push i ret))
               ((listp i)
@@ -77,17 +77,17 @@ asynchronously."
    ((eq 'while (car line))
     (let ((condition (cadr line))
           (body (cddr line)))
-    `(setq ,chain 
-      (deferred:nextc ,chain 
-        (deferred:lambda (x) 
-         (if ,condition 
-             (deferred:nextc 
+    `(setq ,chain
+      (deferred:nextc ,chain
+        (deferred:lambda (x)
+         (if ,condition
+             (deferred:nextc
                (progn
                  ,@(cc:generator-replace-yield body)) self)))))))
    ;; statement
    (t
-    `(setq ,chain 
-           (deferred:nextc ,chain 
+    `(setq ,chain
+           (deferred:nextc ,chain
              (deferred:lambda (x) ,(cc:generator-replace-yield line)))))))
 
 (defmacro cc:generator (callback &rest body)
@@ -125,19 +125,19 @@ CHAIN is the previous deferred task."
     (let ((condition (cadr line))
           (body (cddr line))
           (retsym (gensym)))
-    `(setq ,chain 
-      (deferred:nextc ,chain 
-        (deferred:lambda (x) 
-         (if ,condition 
-             (deferred:nextc 
+    `(setq ,chain
+      (deferred:nextc ,chain
+        (deferred:lambda (x)
+         (if ,condition
+             (deferred:nextc
                (let ((,retsym (progn ,@body)))
                  (if (deferred-p ,retsym) ,retsym
                    (deferred:wait ,wait-time)))
                self)))))))
    ;; statement
    (t
-    `(setq ,chain 
-           (deferred:nextc ,chain 
+    `(setq ,chain
+           (deferred:nextc ,chain
              (lambda (x) ,line))))))
 
 (defmacro cc:thread (wait-time-msec &rest body)
@@ -182,10 +182,10 @@ permission is returned, the task is executed."
 
 (defun cc:semaphore-release(semaphore)
   "Release an execution permission. The programmer is responsible to return the permissions."
-  (when (<= (cc:semaphore-max-permits semaphore) 
+  (when (<= (cc:semaphore-max-permits semaphore)
             (cc:semaphore-permits semaphore))
-    (error "Too many calling semaphore-release. [max:%s <= permits:%s]" 
-           (cc:semaphore-max-permits semaphore) 
+    (error "Too many calling semaphore-release. [max:%s <= permits:%s]"
+           (cc:semaphore-max-permits semaphore)
            (cc:semaphore-permits semaphore)))
   (let ((waiting-deferreds
          (cc:semaphore-waiting-deferreds semaphore)))
@@ -204,7 +204,7 @@ permission is returned, the task is executed."
   (lexical-let ((semaphore semaphore))
     (deferred:try
       (deferred:nextc (cc:semaphore-acquire semaphore) body-func)
-      :catch 
+      :catch
       error-func
       :finally
       (lambda (x) (cc:semaphore-release semaphore)))))
@@ -236,9 +236,9 @@ This function is used for the interruption cases."
 ;; Signal / Channel
 
 (defun cc:signal-channel (&optional name parent-channel)
-  "Create a channel. 
+  "Create a channel.
 NAME is a channel name for debug.
-PARENT-CHANNEL is an upstream channel. The observers of this channel can receive the upstream signals. 
+PARENT-CHANNEL is an upstream channel. The observers of this channel can receive the upstream signals.
 In the case of using the function `cc:signal-send', the observers of the upstream channel can not receive the signals of this channel. The function `cc:signal-send-global' can send a signal to the upstream channels from the downstream channels."
   (lexical-let
       ((ch (cons
@@ -247,15 +247,15 @@ In the case of using the function `cc:signal-send', the observers of the upstrea
              parent-channel ; parent-channel
              nil)))) ; observers
     (when parent-channel
-      (cc:signal-connect 
+      (cc:signal-connect
        parent-channel
        t (lambda (event)
-           (destructuring-bind 
+           (destructuring-bind
                (event-name event-args) event
-             (apply 'cc:signal-send 
+             (apply 'cc:signal-send
                     ch event-name event-args)))))
     ch))
-       
+
 (defmacro cc:signal-name (ch)
   "[internal] Return signal name."
   `(car ,ch))
@@ -275,9 +275,9 @@ If CALLBACK function is given, the deferred object executes the
 CALLBACK function asynchronously. One can connect subsequent
 tasks to the returned deferred object."
   (let ((d (if callback
-               (deferred:new callback) 
+               (deferred:new callback)
              (deferred:new))))
-    (push (cons event-sym d) 
+    (push (cons event-sym d)
           (cc:signal-observers channel))
     d))
 
@@ -302,19 +302,19 @@ tasks to the returned deferred object."
   "Remove the observer object DEFERRED from CHANNEL and return
 the removed deferred object. "
   (let ((observers (cc:signal-observers channel)) deleted)
-    (setf 
+    (setf
      (cc:signal-observers channel) ; place
      (loop for i in observers
            for d = (cdr i)
            unless (eq d deferred)
            collect i
-           else 
+           else
            do (push i deleted)))
     deleted))
 
 (defun cc:signal-disconnect-all (channel)
   "Remove all observers."
-  (setf 
+  (setf
    (cc:signal-observers channel) ; place
    nil))
 
@@ -361,9 +361,9 @@ CHANNEL is a channel object that sends signals of variable events. Observers can
 "
   (let ((this (list parent-env
                     (or test-func 'equal)
-                    (or channel 
+                    (or channel
                         (cc:signal-channel
-                         'dataflow 
+                         'dataflow
                          (and parent-env
                               (cc:dataflow-channel parent-env)))))))
     (cc:dataflow-init-connect this)
@@ -372,14 +372,14 @@ CHANNEL is a channel object that sends signals of variable events. Observers can
 (defun cc:dataflow-init-connect (df)
   "[internal] Initialize the channel object."
   (lexical-let ((df df))
-    (cc:dataflow-connect 
+    (cc:dataflow-connect
      df 'set
      (lambda (args)
        (destructuring-bind (event (key)) args
          (let* ((obj (cc:dataflow-get-object-for-value df key))
                 (value (and obj (cc:dataflow-value obj))))
            (when obj
-             (loop for i in (cc:aif (cc:dataflow-get-object-for-deferreds df key) 
+             (loop for i in (cc:aif (cc:dataflow-get-object-for-deferreds df key)
                                 (cc:dataflow-deferred-list it) nil)
                    do (deferred:callback-post i value))
              (setf (cc:dataflow-deferred-list obj) nil))))))))
@@ -455,7 +455,7 @@ VALUE can be nil as a value."
       ;; just value arrived
       (push (make-cc:dataflow :key key :value value)
             (cc:dataflow-list df))))
-    ;; value arrived and start deferred objects 
+    ;; value arrived and start deferred objects
     (cc:dataflow-signal df 'set key)
     value))
 
@@ -463,7 +463,7 @@ VALUE can be nil as a value."
   "Clear the entry which is indicated by KEY.
 This function does nothing for the waiting deferred objects."
   (cc:dataflow-signal df 'clear key)
-  (setf (cc:dataflow-list df) 
+  (setf (cc:dataflow-list df)
         (loop for i in (cc:dataflow-list df)
               with test = (cc:dataflow-test df)
               unless (funcall test key (cc:dataflow-key i))
@@ -492,7 +492,7 @@ This function does nothing for the waiting deferred objects."
      (cc:dataflow-get-waiting-keys it))))
 
 (defun cc:dataflow-clear-all (df)
-  "Clear all entries in the environment DF. 
+  "Clear all entries in the environment DF.
 This function does nothing for the waiting deferred objects."
   (cc:dataflow-signal df 'clear-all)
   (setf (cc:dataflow-list df) nil))
@@ -505,4 +505,3 @@ This function does nothing for the waiting deferred objects."
 ;; End:
 
 ;;; concurrent.el ends here
-

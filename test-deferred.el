@@ -82,7 +82,7 @@
   `(setq deferred:queue nil))
 
 (defmacro dtest (&rest form)
-  `(progn 
+  `(progn
      (clear)
      (lexical-let (last-value)
        (nextc
@@ -93,7 +93,7 @@
        last-value)))
 
 (defmacro wtest (time &rest form)
-  `(progn 
+  `(progn
      (clear)
      (lexical-let (last-value)
        (nextc
@@ -178,7 +178,7 @@
 
 (ert-deftest deferred-basic ()
   "Basic test for deferred functions."
-  (should (deferred-p 
+  (should (deferred-p
             ;; function test
             (deferred:new)))
   (should (null
@@ -195,7 +195,7 @@
                 (deferred:exec-task d 'ok "ok!")))))
   (should (deferred-p
             ;; basic error post function test
-            (progn 
+            (progn
               (clear)
               (lexical-let ((d (dnew)))
                 (deferred:error d (lambda (e) e))
@@ -292,7 +292,7 @@
            (let (message-log-max)
              (cl-letf (((symbol-function 'message) (lambda (&rest args) args)))
             (let ((d (dnew)))
-              (dtest 
+              (dtest
                (progn
                  (deferred:errorback d "start errorback") d)
                (nextc it (deferred:not-called-func "ERROR : start errorback"))
@@ -359,10 +359,10 @@
   "> global onerror"
   (should= "ONERROR"
           ;; default onerror handler test
-          (let (ret (deferred:onerror 
+          (let (ret (deferred:onerror
                       (lambda (e) (setq ret (concat "ON" (error-message-string e))))))
             (dtest
-             (next (error "ERROR"))) 
+             (next (error "ERROR")))
             ret)))
 
 (ert-deftest deferred-async-call ()
@@ -431,16 +431,16 @@
           ;; real time connection1
           (dtest
            (deferred:succeed "sync ")
-           (nextc it 
+           (nextc it
                   (concat x "connect1"))))
 
   (should= "sync connect11"
           ;; real time connection11
           (dtest
            (deferred:succeed "sync ")
-           (nextc it 
+           (nextc it
                   (concat x "connect1"))
-           (nextc it 
+           (nextc it
                   (concat x "1"))))
 
   (should= "connect2"
@@ -449,7 +449,7 @@
            (deferred:succeed "sync ")
            (nextc it
                   (next "connect"))
-           (nextc it 
+           (nextc it
                   (concat x "2"))))
 
   (should= "connect!! GO"
@@ -460,7 +460,7 @@
                   ($
                    (next "connect")
                    (nextc it (concat x "!!"))))
-           (nextc it 
+           (nextc it
                   (concat x " GO")))))
 
 (ert-deftest deferred-try ()
@@ -469,13 +469,13 @@
   (should= "try"
           ;; try block
           (dtest
-           (deferred:try 
+           (deferred:try
              (next "try"))))
 
   (should= "try"
           ;; try catch block
           (dtest
-           (deferred:try 
+           (deferred:try
              (next "try")
              :catch
              (lambda (e) (concat "CATCH:" e)))))
@@ -484,7 +484,7 @@
           ;; try catch finally block
           (let (val)
             (dtest
-             (deferred:try 
+             (deferred:try
                (next "try")
                :finally
                (lambda (x) (setq val "finally")))
@@ -494,7 +494,7 @@
           ;; try catch finally block
           (let (val)
             (dtest
-             (deferred:try 
+             (deferred:try
                (next "try")
                :catch
                (lambda (e) (concat "CATCH:" e))
@@ -505,7 +505,7 @@
   (should= "try-catch:err"
           ;; try block
           (dtest
-           (deferred:try 
+           (deferred:try
              ($ (next "start")
                 (nextc it (error "err"))
                 (nextc it (deferred:not-called-func x)))
@@ -517,7 +517,7 @@
           ;; try catch finally block
           (let (val)
             (dtest
-             (deferred:try 
+             (deferred:try
                ($ (next "start")
                   (nextc it (error "err"))
                   (nextc it (deferred:not-called-func x)))
@@ -547,10 +547,10 @@
            (errorf it "Error on simple loop calling : %s")))
 
   (should= "nested loop ok (4 nil 3 2 1 0)"
-          ;; nested deferred task in a loop 
+          ;; nested deferred task in a loop
           (lexical-let (count)
             (dtest
-             (dloop 5 (lambda (i) 
+             (dloop 5 (lambda (i)
                         (push i count)
                         (if (eql i 3) (next (push x count)))))
              (nextc it (format "nested loop ok %s" count))
@@ -594,7 +594,7 @@
             (dtest
              (next  "try ") ; try
              (nextc it (funcall body)) ; body
-             (errorc it (format "%s catch " (cadr e))) ; catch 
+             (errorc it (format "%s catch " (cadr e))) ; catch
              (nextc it (concat x "ok"))))) ; finally
 
   (should= "4 ok"
@@ -605,7 +605,7 @@
             (dtest
              (next  "try ") ; try
              (nextc it (funcall body)) ; body
-             (errorc it (format "%s catch " e)) ; catch 
+             (errorc it (format "%s catch " e)) ; catch
              (nextc it (format "%s ok" x))))) ; finally
   )
 
@@ -621,31 +621,31 @@
   (should= '(1)
           ;; single job test: argument
           (dtest
-           (parallel 
+           (parallel
             (next 1))))
 
   (should= '(1)
           ;; single job test: function
           (dtest
-           (parallel 
+           (parallel
             (lambda () 1))))
 
   (should= '(1)
           ;; single job test: list
           (dtest
-           (parallel 
+           (parallel
             (list (next 1)))))
 
   (should= '((a . 1))
           ;; single job test: alist
           (dtest
-           (parallel 
+           (parallel
             (list (cons 'a (next 1))))))
 
   (should= '(0 1)
           ;; simple parallel test: just return value
           (dtest
-           (parallel 
+           (parallel
             (next 0) (next 1))))
 
   (should= '(13 14)
@@ -665,7 +665,7 @@
   (should= '(0 1)
           ;; simple parallel test: function list
           (dtest
-           (parallel 
+           (parallel
             (lambda () 0) (lambda () 1))))
 
   (should= '(0 1)
@@ -718,7 +718,7 @@
           ;; parallel next
           (lexical-let* ((flow (lambda (x)
                                  (parallel
-                                  (next "nest ") 
+                                  (next "nest ")
                                   (next "parallel ")))))
             (dtest
              (next  "start ")
@@ -750,35 +750,35 @@
   (should= 1
           ;; single job test: argument
           (dtest
-           (earlier 
+           (earlier
             (nextc (wait 10) 1))
            (nextc it x)))
 
   (should= 1
           ;; single job test: function
           (dtest
-           (earlier 
+           (earlier
             (lambda () 1))
            (nextc it x)))
 
   (should= 1
           ;; single job test: list
           (dtest
-           (earlier 
+           (earlier
             (list (next 1)))
            (nextc it x)))
 
   (should= '(a . 1)
           ;; single job test: alist
           (dtest
-           (earlier 
+           (earlier
             (list (cons 'a (next 1))))
            (nextc it x)))
 
   (should= '0
           ;; simple earlier test
           (dtest
-           (earlier 
+           (earlier
             (next 0) (next 1))
            (nextc it x)))
 
@@ -807,7 +807,7 @@
   (should= '0
           ;; simple earlier test: function list
           (dtest
-           (earlier 
+           (earlier
             (lambda () 0) (lambda () 1))
            (nextc it x)))
 
@@ -881,21 +881,21 @@
 
 (ert-deftest deferred-process ()
   "> Process"
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process "pwd" nil t nil)
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process "pwd")))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process "pwd" nil t nil)
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process "pwd" nil)))
 
-  (should= 
+  (should=
    (length (buffer-list))
    (deferred:cancel (deferred:process "pwd" nil))
    (length (buffer-list)))
@@ -906,37 +906,37 @@
            (nextc it (deferred:not-called-func))
            (errorc it (string-match "^Searching for program" (cadr e)))))
 
-  (should= 
+  (should=
    (with-temp-buffer (call-process "pwd" nil t nil)
                      (buffer-string))
    (wtest 0.1
           (wait 0.1)
           (deferred:processc it "pwd" nil)))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process-buffer "ls" "-1")
           (nextc it
-                 (unless (buffer-live-p x) 
+                 (unless (buffer-live-p x)
                    (error "Not live buffer : %s" x))
                  (with-current-buffer x (buffer-string)))))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (wait 0.1)
           (deferred:process-bufferc it "ls" "-1")
           (nextc it
-                 (unless (buffer-live-p x) 
+                 (unless (buffer-live-p x)
                    (error "Not live buffer : %s" x))
                  (with-current-buffer x (buffer-string)))))
 
-  (should= 
+  (should=
    (length (buffer-list))
    (deferred:cancel (deferred:process-buffer "ls" nil))
    (length (buffer-list)))
@@ -949,21 +949,21 @@
 
   ;;shell
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process-shell-command "pwd" nil t nil)
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process-shell "pwd")))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process-shell-command "pwd" nil t nil)
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process-shell "pwd" nil)))
 
-  (should= 
+  (should=
    (length (buffer-list))
    (deferred:cancel (deferred:process-shell "pwd" nil))
    (length (buffer-list)))
@@ -974,37 +974,37 @@
                  (nextc it (deferred:not-called-func))
                  (errorc it "ERROR")))
 
-  (should= 
+  (should=
    (with-temp-buffer (call-process-shell-command "pwd" nil t nil)
                      (buffer-string))
    (wtest 0.1
           (wait 0.1)
           (deferred:process-shellc it "pwd" nil)))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process-shell-command "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process-shell-buffer "ls" "-1")
           (nextc it
-                 (unless (buffer-live-p x) 
+                 (unless (buffer-live-p x)
                    (error "Not live buffer : %s" x))
                  (with-current-buffer x (buffer-string)))))
 
-  (should= 
-   (with-temp-buffer 
+  (should=
+   (with-temp-buffer
      (call-process-shell-command "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (wait 0.1)
           (deferred:process-shell-bufferc it "ls" "-1")
           (nextc it
-                 (unless (buffer-live-p x) 
+                 (unless (buffer-live-p x)
                    (error "Not live buffer : %s" x))
                  (with-current-buffer x (buffer-string)))))
 
-  (should= 
+  (should=
    (length (buffer-list))
    (deferred:cancel (deferred:process-shell-buffer "ls" nil))
    (length (buffer-list)))
