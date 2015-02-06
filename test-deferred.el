@@ -359,11 +359,12 @@
   "> global onerror"
   (should= "ONERROR"
           ;; default onerror handler test
-          (let (ret (deferred:onerror
-                      (lambda (e) (setq ret (concat "ON" (error-message-string e))))))
-            (dtest
-             (next (error "ERROR")))
-            ret)))
+           (lexical-let (ret)
+             (let ((deferred:onerror
+                     (lambda (e) (setq ret (concat "ON" (error-message-string e))))))
+               (dtest
+                (next (error "ERROR")))
+               ret))))
 
 (ert-deftest deferred-async-call ()
   "> async call"
