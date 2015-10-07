@@ -533,20 +533,20 @@ idle for MSEC millisecond."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utility functions
 
-(defun deferred:empty-p (times-or-list)
-  "[internal] Return non-nil if TIMES-OR-LIST is the number zero or nil."
-  (or (and (numberp times-or-list) (<= times-or-list 0))
-      (and (listp times-or-list) (null times-or-list))))
+(defun deferred:empty-p (times-or-seq)
+  "[internal] Return non-nil if TIMES-OR-SEQ is the number zero or nil."
+  (or (and (numberp times-or-seq) (<= times-or-seq 0))
+      (and (sequencep times-or-seq) (= (length times-or-seq) 0))))
 
-(defun deferred:loop (times-or-list func)
+(defun deferred:loop (times-or-seq func)
   "Return a iteration deferred object."
-  (deferred:message "LOOP : %s" times-or-list)
-  (if (deferred:empty-p times-or-list) (deferred:next)
+  (deferred:message "LOOP : %s" times-or-seq)
+  (if (deferred:empty-p times-or-seq) (deferred:next)
     (lexical-let*
         (items (rd
                 (cond
-                 ((numberp times-or-list)
-                  (loop for i from 0 below times-or-list
+                 ((numberp times-or-seq)
+                  (loop for i from 0 below times-or-seq
                         with ld = (deferred:next)
                         do
                         (push ld items)
@@ -554,8 +554,8 @@ idle for MSEC millisecond."
                               (lexical-let ((i i) (func func))
                                 (deferred:nextc ld (lambda (_x) (deferred:call-lambda func i)))))
                         finally return ld))
-                 ((listp times-or-list)
-                  (loop for i in times-or-list
+                 ((sequencep times-or-seq)
+                  (loop for i in (append times-or-seq nil) ; seq->list
                         with ld = (deferred:next)
                         do
                         (push ld items)
