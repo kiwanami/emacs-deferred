@@ -21,6 +21,7 @@
 
 (require 'undercover)
 (undercover "concurrent.el"
+            (:send-report nil)
             (:report-file "/tmp/undercover-report.json"))
 (require 'concurrent)
 (require 'cl)

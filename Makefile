@@ -9,7 +9,8 @@ CL=cl-lib
 
 .PHONY: test test-deferred test-concurrent compile clean print-deps travis-ci
 
-test: test-deferred test-deferred-compiled test-concurrent test-concurrent-compiled
+test: test-deferred test-deferred-compiled test-concurrent
+# test-concurrent-compiled
 
 test-deferred:
 	$(CASK) exec ert-runner test/deferred-test.el

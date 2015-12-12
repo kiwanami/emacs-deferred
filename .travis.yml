@@ -12,3 +12,6 @@ env:
 script:
   - emacs --version
   - make travis-ci
+after_script:
+  - cat /tmp/undercover-report.json
+  - curl -v -include --form json_file=@/tmp/undercover-report.json https://coveralls.io/api/v1/jobs
