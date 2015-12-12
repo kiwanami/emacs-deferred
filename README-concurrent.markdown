@@ -1,4 +1,11 @@
-# concurrent.el #
+# concurrent.el
+
+[![Build Status](https://travis-ci.org/kiwanami/emacs-deferred.svg)](https://travis-ci.org/kiwanami/emacs-deferred)
+[![Coverage Status](https://coveralls.io/repos/kiwanami/emacs-deferred/badge.svg)](https://coveralls.io/r/kiwanami/emacs-deferred)
+[![MELPA](http://melpa.org/packages/concurrent-badge.svg)](http://melpa.org/#/concurrent)
+[![MELPA stable](http://stable.melpa.org/packages/concurrent-badge.svg)](http://stable.melpa.org/#/concurrent)
+[![Tag Version](https://img.shields.io/github/tag/kiwanami/emacs-deferred.svg)](https://github.com/kiwanami/emacs-deferred/tags)
+[![License](http://img.shields.io/:license-gpl3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
 
 'concurrent.el' is a higher level library for asynchronous tasks,
 based on 'deferred.el'.  It is inspired by libraries of other
