@@ -20,7 +20,7 @@
 ;; $ emacs -L . -L $HOME/.emacs.d/elisp -batch -l deferred -l concurrent -l test-concurrent -f cc:test-all
 
 (require 'undercover)
-(undercover "*.el"
+(undercover "concurrent.el"
             (:report-file "/tmp/undercover-report.json"))
 (require 'concurrent)
 (require 'cl)

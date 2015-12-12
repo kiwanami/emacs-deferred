@@ -15,13 +15,13 @@ test-deferred:
 	$(CASK) exec ert-runner test/deferred-test.el
 
 test-deferred-compiled: deferred.elc
-	$(CASK) exec ert-runner -l deferred.elc test/deferred-test.el
+	$(CASK) exec ert-runner test/deferred-test.el -l deferred.elc
 
 test-concurrent:
 	$(CASK) exec ert-runner test/concurrent-test.el
 
 test-concurrent-compiled: concurrent.elc
-	$(CASK) exec ert-runner -l concurrent.elc test/concurrent-test.el
+	$(CASK) exec ert-runner test/concurrent-test.el -l concurrent.elc
 
 compile: deferred.elc concurrent.elc
 
