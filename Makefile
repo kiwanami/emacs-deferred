@@ -11,16 +11,16 @@ CL=cl-lib
 test: test-deferred test-deferred-compiled test-concurrent test-concurrent-compiled
 
 test-deferred:
-	$(EMACS) -batch -Q -L . -l deferred.el -l test-deferred.el -f ert-run-tests-batch-and-exit
+	$(EMACS) -batch -Q -L . -l deferred.el -l test/test-deferred.el -f ert-run-tests-batch-and-exit
 
 test-deferred-compiled: deferred.elc
-	$(EMACS) -batch -Q -L . -l deferred.elc -l test-deferred.el -f ert-run-tests-batch-and-exit
+	$(EMACS) -batch -Q -L . -l deferred.elc -l test/test-deferred.el -f ert-run-tests-batch-and-exit
 
 test-concurrent:
-	$(EMACS) -batch -Q -L . -l concurrent.el -l test-concurrent.el -f 'cc:test-all'
+	$(EMACS) -batch -Q -L . -l concurrent.el -l test/test-concurrent.el -f 'cc:test-all'
 
 test-concurrent-compiled: concurrent.elc
-	$(EMACS) -batch -Q -L . -l concurrent.elc -l test-concurrent.el -f 'cc:test-all'
+	$(EMACS) -batch -Q -L . -l concurrent.elc -l test/test-concurrent.el -f 'cc:test-all'
 
 compile: deferred.elc concurrent.elc
 
