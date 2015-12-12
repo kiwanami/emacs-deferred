@@ -19,10 +19,13 @@
 ;; How to run this test ?
 ;; $ emacs -L . -L $HOME/.emacs.d/elisp -batch -l deferred -l concurrent -l test-concurrent -f cc:test-all
 
-
+(require 'undercover)
+(undercover "*.el"
+            (:report-file "/tmp/undercover-report.json"))
 (require 'concurrent)
 (require 'cl)
 (require 'pp)
+(require 'ert)
 
 (defmacro cc:debug (d msg &rest args)
   `(deferred:nextc ,d
@@ -612,4 +615,5 @@
              (> cc:test-fails 0))
     (error "Test failed")))
 
-;;(cc:test-all)
+(ert-deftest concurrent-all-the-thing ()
+  (should-not (cc:test-all)))

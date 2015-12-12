@@ -23,6 +23,10 @@
 
 
 (require 'ert)
+(require 'undercover)
+(undercover "deferred.el"
+            (:send-report nil)
+            (:report-file "/tmp/undercover-report.json"))
 (require 'deferred)
 (require 'cl)
 (require 'pp)
