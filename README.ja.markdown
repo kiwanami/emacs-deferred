@@ -1,5 +1,12 @@
 # deferred.el #
 
+[![Build Status](https://travis-ci.org/kiwanami/emacs-deferred.svg)](https://travis-ci.org/kiwanami/emacs-deferred)
+[![Coverage Status](https://coveralls.io/repos/kiwanami/emacs-deferred/badge.svg)](https://coveralls.io/r/kiwanami/emacs-deferred)
+[![MELPA](http://melpa.org/packages/deferred-badge.svg)](http://melpa.org/#/deferred)
+[![MELPA stable](http://stable.melpa.org/packages/deferred-badge.svg)](http://stable.melpa.org/#/deferred)
+[![Tag Version](https://img.shields.io/github/tag/kiwanami/emacs-deferred.svg)](https://github.com/kiwanami/emacs-deferred/tags)
+[![License](http://img.shields.io/:license-gpl3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
+
 deferred.elは非同期処理を抽象化して書きやすくするためのライブラリです。APIや
 実装については
 [JSDeferred](https://github.com/cho45/jsdeferred "JSDeferred") (by cho45さん)と

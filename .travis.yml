@@ -1,20 +1,17 @@
-language: emacs-lisp
-env:
-  matrix:
-    - EMACS=emacs24 EMACS_PPA=ppa:cassou/emacs
-    - EMACS=emacs-snapshot EMACS_PPA=ppa:cassou/emacs
-    - EMACS=emacs-snapshot EMACS_PPA=ppa:ubuntu-elisp/ppa
-matrix:
-  allow_failures:
-    - env: EMACS=emacs-snapshot EMACS_PPA=ppa:cassou/emacs
-    - env: EMACS=emacs-snapshot EMACS_PPA=ppa:ubuntu-elisp/ppa
+language: generic
+sudo: false
 before_install:
-  # Install Emacs
-  - if [ -n "$EMACS_PPA" ]; then
-      sudo add-apt-repository -y "$EMACS_PPA";
-    fi
-  - sudo apt-get update -qq
-  - sudo apt-get install --force-yes -qq "$EMACS"
-  - sudo apt-get install --force-yes -qq "${EMACS}-el" || true  # OK to fail
+  - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
+  - evm install $EVM_EMACS --use --skip
+  - cask
+env:
+  - EVM_EMACS=emacs-24.3-travis
+  - EVM_EMACS=emacs-24.4-travis
+  - EVM_EMACS=emacs-24.5-travis
+
 script:
+  - emacs --version
   - make travis-ci
+after_script:
+  - cat /tmp/undercover-report.json
+  - curl -v -include --form json_file=@/tmp/undercover-report.json https://coveralls.io/api/v1/jobs

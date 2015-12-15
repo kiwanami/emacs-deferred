@@ -1,19 +1,26 @@
-# concurrent.el #
+# concurrent.el
 
-'concurrent.el' is a higher level library for asynchronous tasks,
-based on 'deferred.el'.  It is inspired by libraries of other
-environments and concurrent programing models.  It has following
-facilities: pseud-thread, generator, semaphore, dataflow variables and
-event management.
+[![Build Status](https://travis-ci.org/kiwanami/emacs-deferred.svg)](https://travis-ci.org/kiwanami/emacs-deferred)
+[![Coverage Status](https://coveralls.io/repos/kiwanami/emacs-deferred/badge.svg)](https://coveralls.io/r/kiwanami/emacs-deferred)
+[![MELPA](http://melpa.org/packages/concurrent-badge.svg)](http://melpa.org/#/concurrent)
+[![MELPA stable](http://stable.melpa.org/packages/concurrent-badge.svg)](http://stable.melpa.org/#/concurrent)
+[![Tag Version](https://img.shields.io/github/tag/kiwanami/emacs-deferred.svg)](https://github.com/kiwanami/emacs-deferred/tags)
+[![License](http://img.shields.io/:license-gpl3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
+
+`concurrent.el` is a higher level library for asynchronous tasks, based on `deferred.el`.
+
+It is inspired by libraries of other environments and concurrent programing models.
+It has following facilities: *pseud-thread*, *generator*, *semaphore*, *dataflow variables* and
+*event management*.
 
 ## Installation ##
 
-You can install concurrent.el from [MELPA](http://melpa.org) by package.el.
+You can install `concurrent.el` from [MELPA](http://melpa.org) by `package.el`.
 
 ## Sample codes ##
 
-You can find following sample codes in 'concurrent-sample.el'.
-Executing 'eval-last-sexp' (C-x C-e), you can try those codes.
+You can find following sample codes in `concurrent-sample.el`.
+Executing `eval-last-sexp` (C-x C-e), you can try those codes.
 
 ### Pseud-thread
 
@@ -39,14 +46,14 @@ Thread:
    (message "Animation finished.")))
 ```
 
-Using 'while' clause in the body content, one can make a loop in the thread.
+Using `while` clause in the body content, one can make a loop in the thread.
 
-Be careful not to make an infinite loop or heavy loop accidentally. If you find that the Emacs enters infinite loop, you may be able to stop the loop with executing the command 'deferred:clear-queue'.
+Be careful not to make an infinite loop or heavy loop accidentally. If you find that the Emacs enters infinite loop, you may be able to stop the loop with executing the command `deferred:clear-queue`.
 
 ### Generator
 
-The following code creates a generator object and binds it to the variable 'fib-gen'.
-One can receive values, using 'yield' function in the generator body code.
+The following code creates a generator object and binds it to the variable `fib-gen`.
+One can receive values, using `yield` function in the generator body code.
 When the generator returns a value, the evaluation process stops.
 Calling generator object as a function, the evaluation process resumes.
 
@@ -76,7 +83,7 @@ fib-list ; => (3 2 1 1 0)
 ### Semaphore
 
 The semaphore restricts the number of concurrent tasks.
-The following code creates a semaphore object with one permit, and binds it to the variable 'smp'.
+The following code creates a semaphore object with one permit, and binds it to the variable `smp`.
 The subsequent codes and comments show how the semaphore object works.
 
 Semaphore:
@@ -112,9 +119,9 @@ Semaphore:
 
 ### Dataflow
 
-The function 'cc:dataflow-environment' creates an environment for dataflow variables.
-The function 'cc:dataflow-get' returns a deferred object that can refer the value.
-The function 'cc:dataflow-set' binds a value to a dataflow variable.
+The function `cc:dataflow-environment` creates an environment for dataflow variables.
+The function `cc:dataflow-get` returns a deferred object that can refer the value.
+The function `cc:dataflow-set` binds a value to a dataflow variable.
 Any objects can be variable keys in the environment. This sample code uses strings as keys.
 
 Dataflow:
@@ -128,18 +135,18 @@ Dataflow:
 ;; Referring a variable synchronously. This function doesn't block.
 (cc:dataflow-get-sync dfenv "abc") ; => nil
 
-(deferred:$ ; Start the task that gets the value of 'abc' and that displays the value.
+(deferred:$ ; Start the task that gets the value of `abc` and that displays the value.
   (cc:dataflow-get dfenv "abc")
   (deferred:nextc it
     (lambda (x) (message "Got abc : %s" x))))
-;; => This task is blocked because no value is bound to the variable 'abc'.
+;; => This task is blocked because no value is bound to the variable `abc`.
 
-(cc:dataflow-set dfenv "abc" 256) ; Binding a value to the variable 'abc'.
+(cc:dataflow-set dfenv "abc" 256) ; Binding a value to the variable `abc`.
 ;; => The blocked task resumes and displays "Got abc : 256".
 
 (cc:dataflow-get-sync dfenv "abc") ; => 256
 
-(cc:dataflow-clear dfenv "abc") ; unbind the variable 'abc'
+(cc:dataflow-clear dfenv "abc") ; unbind the variable `abc`
 
 (cc:dataflow-get-sync dfenv "abc") ; => nil
 
@@ -156,7 +163,7 @@ Dataflow:
 
 ;;## Waiting for two variables
 
-(deferred:$ ; Start the task that refers two variables, 'abc' and 'def'.
+(deferred:$ ; Start the task that refers two variables, `abc` and `def`.
   (deferred:parallel
     (cc:dataflow-get dfenv "abc")
     (cc:dataflow-get dfenv "def"))
@@ -178,7 +185,7 @@ Dataflow:
 
 ### Signal
 
-The function 'cc:signal-channel' creates a channel for signals.
+The function `cc:signal-channel` creates a channel for signals.
 Then, one can connect receivers and send signals.
 
 Signal:
@@ -230,7 +237,7 @@ one can use the different scope signals in the tree structure of the channel obj
    * Return
       * A thread object.
    * This function creates a thread and start it.
-   * The 'thread' means that each s-exps in the body part are executed as asynchronous tasks. Then, the interval between tasks is `wait-time-msec`.
+   * The `thread` means that each s-exps in the body part are executed as asynchronous tasks. Then, the interval between tasks is `wait-time-msec`.
    * The `while` form in the body part acts as a loop.
    * Note that the infinite loops or the heavy loop tasks may make the Emacs freeze. The command `deferred:clear-queue` may recover such freeze situation.
 
