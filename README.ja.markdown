@@ -665,5 +665,5 @@ deferredによってどのようなことが可能になるかなどについて
 
 * * * * *
 
-(C) 2010, 2011  SAKURAI Masashi  All rights reserved.
+(C) 2010-2016  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net

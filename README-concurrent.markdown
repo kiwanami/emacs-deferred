@@ -459,5 +459,5 @@ one can use the different scope signals in the tree structure of the channel obj
 
 * * * * *
 
-(C) 2011  SAKURAI Masashi  All rights reserved.
+(C) 2011-2016  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net

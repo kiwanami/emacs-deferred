@@ -412,5 +412,5 @@ signalやdataflowは、カスケード接続して親子関係を構築できま
 
 * * * * *
 
-(C) 2011  SAKURAI Masashi  All rights reserved.
+(C) 2011-2016  SAKURAI Masashi  All rights reserved.
 m.sakurai at kiwanami.net

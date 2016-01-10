@@ -1,9 +1,9 @@
 ;;; deferred.el --- Simple asynchronous functions for emacs lisp
 
-;; Copyright (C) 2010, 2011, 2012  SAKURAI Masashi
+;; Copyright (C) 2010-2016 SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
-;; Version: 0.3.2
+;; Version: 0.4.0
 ;; Keywords: deferred, async
 ;; URL: https://github.com/kiwanami/emacs-deferred
 
@@ -70,7 +70,7 @@
 (declare-function pp-display-expression 'pp)
 
 (defvar deferred:version nil "deferred.el version")
-(setq deferred:version "0.3.2")
+(setq deferred:version "0.4.0")
 
 ;;; Code:
 
