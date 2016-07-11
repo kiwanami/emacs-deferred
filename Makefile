@@ -1,12 +1,6 @@
 EMACS ?= emacs
 CASK ?= cask
 
-CURL=curl --silent -L
-ERT_URL=http://git.savannah.gnu.org/cgit/emacs.git/plain/lisp/emacs-lisp/ert.el?h=emacs-24
-ERT=ert
-CL_URL=https://raw.githubusercontent.com/emacsmirror/cl-lib/master/cl-lib.el
-CL=cl-lib
-
 .PHONY: test test-deferred test-concurrent compile clean print-deps travis-ci
 
 test: test-deferred test-deferred-compiled test-concurrent
