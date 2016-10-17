@@ -24,14 +24,13 @@ Executing `eval-last-sexp` (C-x C-e), you can try those codes.
 
 ### Pseud-thread
 
-Evaluating the lexical-let in the blow code, the animation starts. After few seconds, the animation will stop.
+Evaluating the let in the blow code, the animation starts. After few seconds, the animation will stop.
 
 Thread:
 
 ```el
-(lexical-let
-    ((count 0) (anm "-/|\\-")
-     (end 50) (pos (point)))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point)))
   (cc:thread
    60
    (message "Animation started.")
@@ -62,7 +61,7 @@ Generator:
 ```el
 (setq fib-list nil)
 (setq fib-gen
-      (lexical-let ((a1 0) (a2 1))
+      (let ((a1 0) (a2 1))
         (cc:generator
          (lambda (x) (push x fib-list)) ; Receiving values as a callback function
          (yield a1)

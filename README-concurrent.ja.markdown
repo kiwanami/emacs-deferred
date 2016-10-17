@@ -20,14 +20,13 @@ eval-last-sexp (C-x C-e) などで実行してみてください。
 
 ### Threadの例
 
-lexical-letを評価するとその場でアニメーションします。引数の時間は、bodyの処理の間隔です。
+letを評価するとその場でアニメーションします。引数の時間は、bodyの処理の間隔です。
 
 Thread:
 
 ```el
-(lexical-let
-    ((count 0) (anm "-/|\\-")
-     (end 50) (pos (point)))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point)))
   (cc:thread
    60
    (message "Animation started.")
@@ -56,7 +55,7 @@ Generator:
 ```el
 (setq fib-list nil)
 (setq fib-gen
-      (lexical-let ((a1 0) (a2 1))
+      (let ((a1 0) (a2 1))
         (cc:generator
          (lambda (x) (push x fib-list)) ; コールバックで結果受け取り
          (yield a1)

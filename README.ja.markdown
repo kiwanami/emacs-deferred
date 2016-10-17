@@ -143,13 +143,13 @@ Parallel deferred:
       (deferred:url-retrieve "http://www.google.co.jp/images/srpr/nav_logo14.png")))
   (deferred:nextc it
     (lambda (buffers)
-      (loop for i in buffers
-            do
-            (insert
-             (format
-              "size: %s\n"
-              (with-current-buffer i (length (buffer-string)))))
-            (kill-buffer i)))))
+      (cl-loop for i in buffers
+               do
+               (insert
+                (format
+                 "size: %s\n"
+                 (with-current-buffer i (length (buffer-string)))))
+               (kill-buffer i)))))
 ```
 
 * deferred:parallel 内部で、並列に実行できるものは並列に動作します。
@@ -266,9 +266,9 @@ deferredの処理の中でdeferredオブジェクトを返すと、ソースコ�
 Loop and animation:
 
 ```el
-(lexical-let ((count 0) (anm "-/|\\-")
-              (end 50) (pos (point))
-              (wait-time 50))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point))
+      (wait-time 50))
   (deferred:$
     (deferred:next
       (lambda (x) (message "Animation started.")))
@@ -585,14 +585,14 @@ deferred処理の中でdeferredオブジェクトを返すと、静的に接続�
 
 ### レキシカルスコープ ###
 
-deferredの処理に値を持って行く場合、lexical-let などを用いてレキシカルスコープを使うと大変便利です。
+deferredの処理に値を持って行く場合、let などを用いてレキシカルスコープを使うと大変便利です。
 
 特に、一連のdeferred処理の中で共通に使う値にレキシカルスコープを使うと、ローカル変数のようにアクセスすること出来るため、非同期処理のために値をグローバルに保持しておく必要が無くなります。
 
-lexical-let 例:
+let 例:
 
 ```el
-(lexical-let ((a (point)))
+(let ((a (point)))
   (deferred:$
     (deferred:wait 1000)
     (deferred:nextc it
@@ -601,7 +601,7 @@ lexical-let 例:
         (insert "here!")))))
 ```
 
-逆に、lexical-letでレキシカルスコープにバインドしていないシンボルを参照しようとして、エラーになることがよくあります。
+逆に、letでレキシカルスコープにバインドしていないシンボルを参照しようとして、エラーになることがよくあります。
 
 ### カレント状態 ###
 
@@ -624,7 +624,7 @@ save-execursion や with-current-buffer など、S式の範囲で状態を保持
 改善例:
 
 ```el
-(lexical-let ((buf (get-buffer "*Message*")))
+(let ((buf (get-buffer "*Message*")))
   (deferred:$
     (deferred:wait 1000)
     (deferred:nextc it
