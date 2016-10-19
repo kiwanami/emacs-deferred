@@ -155,30 +155,33 @@
                (deferred:call-lambda
                  (lambda (_) (+ st 2)) 0))))
 
-(ert-deftest deferred-primitive-compile ()
-  "> call-lambda byte-compile"
-  (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1))))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1)) 1))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda () 1))))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda () 1)) 1))
+(when (version<= "25.0" emacs-version)
+  ;; Emacs 24 doesn’t know how to byte-compile closures, so run this test only
+  ;; under Emacs 25.
+  (ert-deftest deferred-primitive-compile ()
+    "> call-lambda byte-compile"
+    (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1))))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1)) 1))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda () 1))))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda () 1)) 1))
 
-  (should= 3 (let ((st 1))
-               (deferred:call-lambda
-                 (byte-compile (lambda () (+ st 2))))))
-  (should= 3  (let ((st 1)) ;ng
-                (deferred:call-lambda
-                  (byte-compile (lambda () (+ st 2))) 0)))
-  (should= 3 (let ((st 1))
-               (deferred:call-lambda
-                 (byte-compile (lambda (_) (+ st 2))))))
-  (should= 3  (let ((st 1)) ;ng
-                (deferred:call-lambda
-                  (byte-compile (lambda (_) (+ st 2))) 0)))
+    (should= 3 (let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda () (+ st 2))))))
+    (should= 3  (let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda () (+ st 2))) 0)))
+    (should= 3 (let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda (_) (+ st 2))))))
+    (should= 3  (let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda (_) (+ st 2))) 0)))
 
-  (should-error
-   (deferred:call-lambda
-     (lambda (x) (signal 'wrong-number-of-arguments '("org"))))
-   :type 'wrong-number-of-arguments))
+    (should-error
+     (deferred:call-lambda
+       (lambda (x) (signal 'wrong-number-of-arguments '("org"))))
+     :type 'wrong-number-of-arguments)))
 
 (ert-deftest deferred-basic ()
   "Basic test for deferred functions."
