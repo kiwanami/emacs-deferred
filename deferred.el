@@ -5,7 +5,7 @@
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
 ;; Version: 0.4.0
 ;; Keywords: deferred, async
-;; Package-Requires: ((emacs "24.3") (cl-lib "1.0"))
+;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/kiwanami/emacs-deferred
 
 ;; This program is free software; you can redistribute it and/or modify
