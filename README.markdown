@@ -144,13 +144,13 @@ Parallel deferred:
       (deferred:url-retrieve "http://www.google.co.jp/images/srpr/nav_logo14.png")))
   (deferred:nextc it
     (lambda (buffers)
-      (loop for i in buffers
-            do
-            (insert
-             (format
-              "size: %s\n"
-              (with-current-buffer i (length (buffer-string)))))
-            (kill-buffer i)))))
+      (cl-loop for i in buffers
+               do
+               (insert
+                (format
+                 "size: %s\n"
+                 (with-current-buffer i (length (buffer-string)))))
+               (kill-buffer i)))))
 ```
 
 * The function `deferred:parallel` runs asynchronous tasks concurrently.
@@ -275,9 +275,9 @@ It may seem the multi-thread in Emacs Lisp.
 Loop and animation:
 
 ```el
-(lexical-let ((count 0) (anm "-/|\\-")
-              (end 50) (pos (point))
-              (wait-time 50))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point))
+      (wait-time 50))
   (deferred:$
     (deferred:next
       (lambda (x) (message "Animation started.")))
@@ -289,7 +289,7 @@ Loop and animation:
             (goto-char pos) (delete-char 1))
           (insert (char-to-string
                    (aref anm (% count (length anm))))))
-        (if (> end (incf count)) ; return nil to stop this loop
+        (if (> end (cl-incf count)) ; return nil to stop this loop
             (deferred:nextc (deferred:wait wait-time) self)))) ; return the deferred
 
     (deferred:nextc it
@@ -315,7 +315,7 @@ In the following example, `run-at-time` is used as an example for the asynchrono
       1))
   (deferred:nextc it
     (lambda (x)
-      (lexical-let ((d (deferred:new #'identity)))
+      (let ((d (deferred:new #'identity)))
         (run-at-time 0 nil (lambda (x)
                              ;; Start the following callback queue now.
                              (deferred:callback-post d x))
@@ -639,12 +639,12 @@ Some discussions of writing deferred codes.
 
 ### Using lexical scope ###
 
-Using the lexical scope macro, such as `lexical-let`, the deferred tasks defined by lambdas can access local variables.
+Using the lexical scope macro, such as `let`, the deferred tasks defined by lambdas can access local variables.
 
-`lexical-let` Ex.:
+`let` Ex.:
 
 ```el
-(lexical-let ((a (point)))
+(let ((a (point)))
   (deferred:$
     (deferred:wait 1000)
     (deferred:nextc it
@@ -676,7 +676,7 @@ In this case, using lexical scope macros to access the buffer variable, you can 
 Corrected:
 
 ```el
-(lexical-let ((buf (get-buffer "*Message*")))
+(let ((buf (get-buffer "*Message*")))
   (deferred:$
     (deferred:wait 1000)
     (deferred:nextc it

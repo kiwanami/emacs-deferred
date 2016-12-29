@@ -1,4 +1,4 @@
-;;; test code for deferred.el
+;;; test code for deferred.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2010, 2011  SAKURAI Masashi
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
@@ -28,7 +28,7 @@
             (:send-report nil)
             (:report-file "/tmp/undercover-report.json"))
 (require 'deferred)
-(require 'cl)
+(require 'cl-lib)
 (require 'pp)
 
 (defmacro should= (a &rest b)
@@ -41,10 +41,10 @@
 
 (defmacro $ (&rest elements)
   `(let (it)
-     ,@(loop for i in elements
-             with it = nil
-             collect
-             `(setq it ,i))
+     ,@(cl-loop for i in elements
+                with it = nil
+                collect
+                `(setq it ,i))
      it))
 
 (defmacro dnew(&rest aforms)
@@ -88,7 +88,7 @@
 (defmacro dtest (&rest form)
   `(progn
      (clear)
-     (lexical-let (last-value)
+     (let (last-value)
        (nextc
         ($
          ,@form)
@@ -99,7 +99,7 @@
 (defmacro wtest (time &rest form)
   `(progn
      (clear)
-     (lexical-let (last-value)
+     (let (last-value)
        (nextc
         ($
          ,@form)
@@ -109,7 +109,7 @@
        (flush)
        last-value)))
 
-(defun deferred:setTimeout (f msec)
+(defun deferred:setTimeout (f _msec)
   "overrided for test"
   (deferred:call f))
 
@@ -118,7 +118,7 @@
   (when (deferred-p id)
     (deferred:cancel id)))
 
-(defun deferred:run-with-idle-timer (sec f)
+(defun deferred:run-with-idle-timer (_sec f)
   "overrided for test"
   (deferred:call f))
 
@@ -131,8 +131,8 @@
   "> call-lambda simple"
   (should= 1 (deferred:call-lambda (lambda ()  1)))
   (should= 1 (deferred:call-lambda (lambda ()  1) 1))
-  (should= 1 (deferred:call-lambda (lambda (x) 1)))
-  (should= 1 (deferred:call-lambda (lambda (x) 1) 1))
+  (should= 1 (deferred:call-lambda (lambda (_) 1)))
+  (should= 1 (deferred:call-lambda (lambda (_) 1) 1))
   (should= 1 (deferred:call-lambda (deferred:lambda () 1)))
   (should= 1 (deferred:call-lambda (deferred:lambda () 1) 1))
   (should= nil (deferred:call-lambda 'car))
@@ -142,43 +142,46 @@
 
 (ert-deftest deferred-primitive-scope ()
   "> call-lambda lexical-scope"
-  (should= 3 (lexical-let ((st 1))
+  (should= 3 (let ((st 1))
               (deferred:call-lambda
                 (lambda () (+ st 2)))))
-  (should= 3  (lexical-let ((st 1))
+  (should= 3  (let ((st 1))
                (deferred:call-lambda
                  (lambda () (+ st 2)) 0)))
-  (should= 3 (lexical-let ((st 1))
+  (should= 3 (let ((st 1))
               (deferred:call-lambda
-                (lambda (x) (+ st 2)))))
-  (should= 3  (lexical-let ((st 1))
+                (lambda (_) (+ st 2)))))
+  (should= 3  (let ((st 1))
                (deferred:call-lambda
-                 (lambda (x) (+ st 2)) 0))))
+                 (lambda (_) (+ st 2)) 0))))
 
-(ert-deftest deferred-primitive-compile ()
-  "> call-lambda byte-compile"
-  (should= 1 (deferred:call-lambda (byte-compile (lambda (x) 1))))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda (x) 1)) 1))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda () 1))))
-  (should= 1 (deferred:call-lambda (byte-compile (lambda () 1)) 1))
+(when (version<= "25.0" emacs-version)
+  ;; Emacs 24 doesn’t know how to byte-compile closures, so run this test only
+  ;; under Emacs 25.
+  (ert-deftest deferred-primitive-compile ()
+    "> call-lambda byte-compile"
+    (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1))))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda (_) 1)) 1))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda () 1))))
+    (should= 1 (deferred:call-lambda (byte-compile (lambda () 1)) 1))
 
-  (should= 3 (lexical-let ((st 1))
-               (deferred:call-lambda
-                 (byte-compile (lambda () (+ st 2))))))
-  (should= 3  (lexical-let ((st 1)) ;ng
-                (deferred:call-lambda
-                  (byte-compile (lambda () (+ st 2))) 0)))
-  (should= 3 (lexical-let ((st 1))
-               (deferred:call-lambda
-                 (byte-compile (lambda (x) (+ st 2))))))
-  (should= 3  (lexical-let ((st 1)) ;ng
-                (deferred:call-lambda
-                  (byte-compile (lambda (x) (+ st 2))) 0)))
+    (should= 3 (let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda () (+ st 2))))))
+    (should= 3  (let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda () (+ st 2))) 0)))
+    (should= 3 (let ((st 1))
+                 (deferred:call-lambda
+                   (byte-compile (lambda (_) (+ st 2))))))
+    (should= 3  (let ((st 1)) ;ng
+                  (deferred:call-lambda
+                    (byte-compile (lambda (_) (+ st 2))) 0)))
 
-  (should-error
-   (deferred:call-lambda
-     (lambda (x) (signal 'wrong-number-of-arguments '("org"))))
-   :type 'wrong-number-of-arguments))
+    (should-error
+     (deferred:call-lambda
+       (lambda (x) (signal 'wrong-number-of-arguments '("org"))))
+     :type 'wrong-number-of-arguments)))
 
 (ert-deftest deferred-basic ()
   "Basic test for deferred functions."
@@ -194,14 +197,14 @@
             ;; basic post function test
             (progn
               (clear)
-              (lexical-let ((d (dnew)))
+              (let ((d (dnew)))
                 (nextc d x)
                 (deferred:exec-task d 'ok "ok!")))))
   (should (deferred-p
             ;; basic error post function test
             (progn
               (clear)
-              (lexical-let ((d (dnew)))
+              (let ((d (dnew)))
                 (deferred:error d (lambda (e) e))
                 (deferred:exec-task d 'ng "error"))))))
 
@@ -261,7 +264,7 @@
   (should= '(2 1 0)
           ;; basic deferred chain test
           (clear)
-          (lexical-let (vs)
+          (let (vs)
             ($ (next (push 1 vs))
                (nextc it (push 2 vs)))
             (push 0 vs)
@@ -325,7 +328,7 @@
             (dtest
              (next "chain")
              (deferred:watch it
-               (lambda (x) (setq val " watch") nil))
+               (lambda (_) (setq val " watch") nil))
              (nextc it (concat x val " ok")))))
 
   (should= "error!! watch ok"
@@ -343,7 +346,7 @@
             (dtest
              (next "chain")
              (deferred:watch it
-               (lambda (x) (error "ERROR")))
+               (lambda (_) (error "ERROR")))
              (nextc it (concat x " watch ok2"))))))
 
 (ert-deftest deferred-async-connect ()
@@ -363,7 +366,7 @@
   "> global onerror"
   (should= "ONERROR"
           ;; default onerror handler test
-           (lexical-let (ret)
+           (let (ret)
              (let ((deferred:onerror
                      (lambda (e) (setq ret (concat "ON" (error-message-string e))))))
                (dtest
@@ -538,7 +541,7 @@
   "> loop"
   (should= 10
           ;; basic loop test
-          (lexical-let ((v 0))
+          (let ((v 0))
             (dtest
              (dloop 5 (lambda (i) (setq v (+ v i))))
              (errorf it "Error on simple loop calling : %s"))
@@ -553,7 +556,7 @@
 
   (should= "nested loop ok (4 nil 3 2 1 0)"
           ;; nested deferred task in a loop
-          (lexical-let (count)
+          (let (count)
             (dtest
              (dloop 5 (lambda (i)
                         (push i count)
@@ -565,7 +568,7 @@
 
   (should= '(6 4 2)
           ;; do-loop test
-          (lexical-let (count)
+          (let (count)
             (dtest
              (dloop '(1 2 3)
                     (lambda (x) (push (* 2 x) count)))
@@ -593,9 +596,9 @@
 
   (should= "loop error catch ok"
           ;; try catch finally test
-          (lexical-let ((body (lambda ()
-                                (deferred:loop 5
-                                  (lambda (i) (if (= 2 i) (error "loop error")))))))
+          (let ((body (lambda ()
+                        (deferred:loop 5
+                          (lambda (i) (if (= 2 i) (error "loop error")))))))
             (dtest
              (next  "try ") ; try
              (nextc it (funcall body)) ; body
@@ -604,9 +607,9 @@
 
   (should= "4 ok"
           ;; try catch finally test
-          (lexical-let ((body (lambda ()
-                                (deferred:loop 5
-                                  (lambda (i) i)))))
+          (let ((body (lambda ()
+                        (deferred:loop 5
+                          (lambda (i) i)))))
             (dtest
              (next  "try ") ; try
              (nextc it (funcall body)) ; body
@@ -721,10 +724,10 @@
 
   (should= "nest parallel ok"
           ;; parallel next
-          (lexical-let* ((flow (lambda (x)
-                                 (parallel
-                                  (next "nest ")
-                                  (next "parallel ")))))
+          (let* ((flow (lambda (x)
+                         (parallel
+                          (next "nest ")
+                          (next "parallel ")))))
             (dtest
              (next  "start ")
              (nextc it (funcall flow x))

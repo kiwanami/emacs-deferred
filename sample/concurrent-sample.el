@@ -1,23 +1,26 @@
-;;; Sample code for concurrent.el
+;;; Sample code for concurrent.el  -*- lexical-binding: t; -*-
 
 ;; Evaluate following code in the scratch buffer.
+
+(require 'cl-lib)
+(require 'concurrent)
 
 ;;==================================================
 ;;; generator
 
-(setq fib-list nil)
+(defvar fib-list nil)
 
-(setq fib-gen ; Create a generator object.
-      (lexical-let ((a1 0) (a2 1))
-        (cc:generator
-         (lambda (x) (push x fib-list)) ; receiving values
-         (yield a1)
-         (yield a2)
-         (while t
-           (let ((next (+ a1 a2)))
-             (setq a1 a2
-                   a2 next)
-             (yield next))))))
+(defvar fib-gen ; Create a generator object.
+  (let ((a1 0) (a2 1))
+    (cc:generator
+     (lambda (x) (push x fib-list)) ; receiving values
+     (yield a1)
+     (yield a2)
+     (while t
+       (let ((next (+ a1 a2)))
+         (setq a1 a2
+               a2 next)
+         (yield next))))))
 
 (funcall fib-gen) ; Generate 5 times
 (funcall fib-gen) (funcall fib-gen)
@@ -29,13 +32,12 @@ fib-list ;=> (3 2 1 1 0)
 ;;==================================================
 ;;; thread
 
-(lexical-let
-    ((count 0) (anm "-/|\\-")
-     (end 50) (pos (point)))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point)))
   (cc:thread
    60
    (message "Animation started.")
-   (while (> end (incf count))
+   (while (> end (cl-incf count))
      (save-excursion
        (when (< 1 count)
          (goto-char pos) (delete-char 1))
@@ -52,17 +54,17 @@ fib-list ;=> (3 2 1 1 0)
 ;;; semaphore
 
 ;; create a semaphore object with permit=1.
-(setq smp (cc:semaphore-create 1))
+(defvar smp (cc:semaphore-create 1))
 
 ;; executing three tasks...
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x)
+  (lambda (_)
     (message "go1")))
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x)
+  (lambda (_)
     (message "go2")))
 (deferred:nextc (cc:semaphore-acquire smp)
-  (lambda(x)
+  (lambda (_)
     (message "go3")))
 
 ;; => Only the fist task is executed and displays "go1".
@@ -82,11 +84,11 @@ fib-list ;=> (3 2 1 1 0)
 ;; Dataflow
 
 ;; create a parent environment and bind "aaa" to 256.
-(setq dfenv-parent (cc:dataflow-environment))
+(defvar dfenv-parent (cc:dataflow-environment))
 (cc:dataflow-set dfenv-parent "aaa" 256)
 
 ;; create an environment with the parent one.
-(setq dfenv (cc:dataflow-environment dfenv-parent))
+(defvar dfenv (cc:dataflow-environment dfenv-parent))
 
 ;; Return the parent value.
 (cc:dataflow-get-sync dfenv "aaa") ; => 256
@@ -151,7 +153,7 @@ fib-list ;=> (3 2 1 1 0)
 ;; Signal
 
 (progn
-  (setq parent-channel (cc:signal-channel "parent"))
+  (defvar parent-channel (cc:signal-channel "parent"))
   (cc:signal-connect
    parent-channel 'parent-load
    (lambda (event) (message "Parent Signal : %s" event)))
@@ -159,7 +161,7 @@ fib-list ;=> (3 2 1 1 0)
    parent-channel t
    (lambda (event) (message "Parent Listener : %s" event)))
 
-  (setq channel (cc:signal-channel "child" parent-channel))
+  (defvar channel (cc:signal-channel "child" parent-channel))
   (cc:signal-connect
    channel 'window-load
    (lambda (event) (message "Signal : %s" event)))

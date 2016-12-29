@@ -20,18 +20,17 @@ eval-last-sexp (C-x C-e) などで実行してみてください。
 
 ### Threadの例
 
-lexical-letを評価するとその場でアニメーションします。引数の時間は、bodyの処理の間隔です。
+letを評価するとその場でアニメーションします。引数の時間は、bodyの処理の間隔です。
 
 Thread:
 
 ```el
-(lexical-let
-    ((count 0) (anm "-/|\\-")
-     (end 50) (pos (point)))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point)))
   (cc:thread
    60
    (message "Animation started.")
-   (while (> end (incf count))
+   (while (> end (cl-incf count))
      (save-excursion
        (when (< 1 count)
          (goto-char pos) (delete-char 1))
@@ -56,7 +55,7 @@ Generator:
 ```el
 (setq fib-list nil)
 (setq fib-gen
-      (lexical-let ((a1 0) (a2 1))
+      (let ((a1 0) (a2 1))
         (cc:generator
          (lambda (x) (push x fib-list)) ; コールバックで結果受け取り
          (yield a1)
@@ -185,7 +184,7 @@ cc:signal-channel でシグナルを流すチャンネルを作成します。�
 (cc:signal-connect
  channel t  ; t にするとすべてのシグナルを拾う
  (lambda (event)
-   (destructuring-bind (event-name (args)) event
+   (cl-destructuring-bind (event-name (args)) event
      (message "Listener : %S / %S" event-name args))))
 
 (deferred:$ ; deferred で非同期タスクを接続できる
@@ -307,7 +306,7 @@ signalやdataflowは、カスケード接続して親子関係を構築できま
       * args: イベント引数
    * 返値：なし
    * シグナルを発信します。
-   * args は、受信側で (lambda (event) (destructuring-bind (event-sym (args)) event ... )) のようにすると受け取れます。
+   * args は、受信側で (lambda (event) (cl-destructuring-bind (event-sym (args)) event ... )) のようにすると受け取れます。
 
 
 * cc:signal-send-global (channel event-sym &rest args)

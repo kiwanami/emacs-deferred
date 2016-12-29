@@ -24,18 +24,17 @@ Executing `eval-last-sexp` (C-x C-e), you can try those codes.
 
 ### Pseud-thread
 
-Evaluating the lexical-let in the blow code, the animation starts. After few seconds, the animation will stop.
+Evaluating the let in the blow code, the animation starts. After few seconds, the animation will stop.
 
 Thread:
 
 ```el
-(lexical-let
-    ((count 0) (anm "-/|\\-")
-     (end 50) (pos (point)))
+(let ((count 0) (anm "-/|\\-")
+      (end 50) (pos (point)))
   (cc:thread
    60
    (message "Animation started.")
-   (while (> end (incf count))
+   (while (> end (cl-incf count))
      (save-excursion
        (when (< 1 count)
          (goto-char pos) (delete-char 1))
@@ -62,7 +61,7 @@ Generator:
 ```el
 (setq fib-list nil)
 (setq fib-gen
-      (lexical-let ((a1 0) (a2 1))
+      (let ((a1 0) (a2 1))
         (cc:generator
          (lambda (x) (push x fib-list)) ; Receiving values as a callback function
          (yield a1)
@@ -201,7 +200,7 @@ Signal:
 (cc:signal-connect
  channel t  ; The signal symbol 't' means any signals.
  (lambda (event)
-   (destructuring-bind (event-name (args)) event
+   (cl-destructuring-bind (event-name (args)) event
      (message "Listener : %S / %S" event-name args))))
 
 (deferred:$ ; Connect the deferred task.
@@ -339,7 +338,7 @@ one can use the different scope signals in the tree structure of the channel obj
       * None
    * Send a signal to the channel.
    * If the `args` are given, observers can get the values by following code:
-      * `(lambda (event) (destructuring-bind (event-sym (args)) event ... ))`
+      * `(lambda (event) (cl-destructuring-bind (event-sym (args)) event ... ))`
 
 * cc:signal-send-global (channel event-sym &rest args)
    * Arguments
