@@ -3,9 +3,9 @@
 ;; Copyright (C) 2010-2016  SAKURAI Masashi
 
 ;; Author: SAKURAI Masashi <m.sakurai at kiwanami.net>
-;; Version: 0.4.0
+;; Version: 0.5.0
 ;; Keywords: deferred, async, concurrent
-;; Package-Requires: ((emacs "24.3") (deferred "0.4.0"))
+;; Package-Requires: ((emacs "24.3") (deferred "0.5.0"))
 ;; URL: https://github.com/kiwanami/emacs-deferred/blob/master/README-concurrent.markdown
 
 ;; This program is free software; you can redistribute it and/or modify
