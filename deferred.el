@@ -71,7 +71,7 @@
 (declare-function pp-display-expression 'pp)
 
 (defvar deferred:version nil "deferred.el version")
-(setq deferred:version "0.4.0")
+(setq deferred:version "0.5.0")
 
 ;;; Code:
 
