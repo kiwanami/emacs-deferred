@@ -198,7 +198,7 @@ in the asynchronous tasks.")
 (defvar deferred:tick-time 0.001
   "Waiting time between asynchronous tasks (second).
 The shorter waiting time increases the load of Emacs. The end
-user can tune this paramter. However, applications should not
+user can tune this parameter. However, applications should not
 modify it because the applications run on various environments.")
 
 (defvar deferred:queue nil
