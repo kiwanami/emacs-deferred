@@ -887,7 +887,7 @@
 
 ;; process
 
-(defmacro should-match (proc-name err-msg a &rest b)
+(defmacro should-match (proc-name a &rest b)
   `(let ((expected ,a)
          (actual (progn ,@b)))
      (should= (nth 0 expected) (nth 0 actual))
@@ -895,7 +895,9 @@
      ;; The stderr buffer gets a notification that it's closing.  The regexp
      ;; below should match exactly the allowed proc-name only.
      (should= (string-match
-               (format "%s\nProcess \\*deferred:\\*%s\\*:[0-9]+ stderr finished\n$" ,err-msg ,proc-name)
+               (format "%s\nProcess \\*deferred:\\*%s\\*:[0-9]+ stderr finished\n$"
+                       (nth 2 expected)
+                       ,proc-name)
                (nth 2 actual))
               0)))
 
@@ -1037,14 +1039,14 @@
 
   ;; w-stderr
 
-  (should-match "pwd" ""
+  (should-match "pwd"
    (with-temp-buffer
      (call-process "pwd" nil t nil)
      (list 0 (buffer-string) ""))
    (wtest 0.1 ;; maybe fail in some environments...
           (deferred:process-w-stderr "pwd")))
 
-  (should-match "pwd" ""
+  (should-match "pwd"
    (with-temp-buffer
      (call-process "pwd" nil t nil)
      (list 0 (buffer-string) ""))
@@ -1062,12 +1064,12 @@
             (nextc it (deferred:not-called-func))
             (errorc it (string-match "^Searching for program" (cadr e)))))
 
-  (should-match "pwd" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n"
-                (list 1 "" "")
+  (should-match "pwd"
+                (list 1 "" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n")
                 (wtest 0.1 ;; maybe fail in some environments...
                        (deferred:process-w-stderr "pwd" "--nonsensical-argument")))
 
-  (should-match "pwd" ""
+  (should-match "pwd"
    (with-temp-buffer
      (call-process "pwd" nil t nil)
      (list 0 (buffer-string) ""))
@@ -1075,7 +1077,7 @@
           (wait 0.1)
           (deferred:process-w-stderrc it "pwd" nil)))
 
-  (should-match "ls" ""
+  (should-match "ls"
    (with-temp-buffer
      (call-process "ls" nil t "-1")
      (list 0 (buffer-string) ""))
@@ -1092,8 +1094,8 @@
                        (with-current-buffer stdout (buffer-string))
                        (with-current-buffer stderr (buffer-string)))))))
 
-  (should-match "pwd" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n"
-                (list 1 "" "")
+  (should-match "pwd"
+                (list 1 "" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n")
                 (wtest 0.1 ;; maybe fail in some environments...
                        (deferred:process-w-stderr-buffer "pwd" "--nonsensical-argument")
                        (nextc it
@@ -1107,7 +1109,7 @@
                                       (with-current-buffer stdout (buffer-string))
                                       (with-current-buffer stderr (buffer-string)))))))
 
-  (should-match "ls" ""
+  (should-match "ls"
    (with-temp-buffer
      (call-process "ls" nil t "-1")
      (list 0 (buffer-string) ""))
