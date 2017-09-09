@@ -915,11 +915,36 @@
            (errorc it (string-match "^Searching for program" (cadr e)))))
 
   (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-ec "pwd" nil))
+   (length (buffer-list)))
+
+  (should= 0
+           (dtest
+            (deferred:process-ec "pwd---")
+            (nextc it (deferred:not-called-func))
+            (errorc it (string-match "^Searching for program" (cadr e)))))
+
+  (should=
+   (with-temp-buffer
+     (call-process "pwd" nil t nil)
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-ec "pwd" nil)))
+
+  (should=
    (with-temp-buffer (call-process "pwd" nil t nil)
                      (buffer-string))
    (wtest 0.1
           (wait 0.1)
           (deferred:processc it "pwd" nil)))
+
+  (should=
+   (with-temp-buffer (call-process "pwd" nil t nil)
+                     (list 0 (buffer-string)))
+   (wtest 0.1
+          (wait 0.1)
+          (deferred:process-ecc it "pwd" nil)))
 
   (should=
    (with-temp-buffer
@@ -935,6 +960,32 @@
   (should=
    (with-temp-buffer
      (call-process "ls" nil t "-1")
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-ec-buffer "ls" "-1")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                  (unless (buffer-live-p buf)
+                   (error "Not live buffer : %s" buf))
+                  (list (nth 0 x)
+                        (with-current-buffer buf (buffer-string)))))))
+
+  (should=
+   (with-temp-buffer
+     (call-process "ls" nil t t "--nonsensical")
+     ;; Matching error output is trickier here, just check exit code.
+     2)
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-ec-buffer "ls" "--nonsensical")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                   (unless (buffer-live-p buf)
+                     (error "Not live buffer : %s" buf))
+                   (nth 0 x)))))
+
+  (should=
+   (with-temp-buffer
+     (call-process "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
           (wait 0.1)
@@ -943,6 +994,20 @@
                  (unless (buffer-live-p x)
                    (error "Not live buffer : %s" x))
                  (with-current-buffer x (buffer-string)))))
+
+  (should=
+   (with-temp-buffer
+     (call-process "ls" nil t "-1")
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (wait 0.1)
+          (deferred:process-ec-bufferc it "ls" "-1")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                   (unless (buffer-live-p buf)
+                     (error "Not live buffer : %s" buf))
+                   (list (nth 0 x)
+                         (with-current-buffer buf (buffer-string)))))))
 
   (should=
    (length (buffer-list))
@@ -954,6 +1019,17 @@
            (deferred:process-buffer "pwd---")
            (nextc it (deferred:not-called-func))
            (errorc it (string-match "^Searching for program" (cadr e)))))
+
+  (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-ec-buffer "ls" nil))
+   (length (buffer-list)))
+
+  (should= 0
+           (dtest
+            (deferred:process-ec-buffer "pwd---")
+            (nextc it (deferred:not-called-func))
+            (errorc it (string-match "^Searching for program" (cadr e)))))
 
   ;;shell
 
@@ -983,11 +1059,36 @@
                  (errorc it "ERROR")))
 
   (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-shell-ec "pwd" nil))
+   (length (buffer-list)))
+
+  (should= "ERROR"
+           (wtest 0.1
+                  (deferred:process-shell-ec "lsasfdsadf")
+                  (nextc it (deferred:not-called-func))
+                  (errorc it "ERROR")))
+
+  (should=
+   (with-temp-buffer
+     (call-process "pwd" nil t nil)
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-shell-ec "pwd" nil)))
+
+  (should=
    (with-temp-buffer (call-process-shell-command "pwd" nil t nil)
                      (buffer-string))
    (wtest 0.1
           (wait 0.1)
           (deferred:process-shellc it "pwd" nil)))
+
+  (should=
+   (with-temp-buffer (call-process "pwd" nil t nil)
+                     (list 0 (buffer-string)))
+   (wtest 0.1
+          (wait 0.1)
+          (deferred:process-shell-ecc it "pwd" nil)))
 
   (should=
    (with-temp-buffer
@@ -1002,6 +1103,32 @@
 
   (should=
    (with-temp-buffer
+     (call-process "ls" nil t "-1")
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-shell-ec-buffer "ls" "-1")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                   (unless (buffer-live-p buf)
+                     (error "Not live buffer : %s" buf))
+                   (list (nth 0 x)
+                         (with-current-buffer buf (buffer-string)))))))
+
+  (should=
+   (with-temp-buffer
+     (call-process "ls" nil t t "--nonsensical")
+     ;; Matching error output is trickier here, just check exit code.
+     2)
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-shell-ec-buffer "ls" "--nonsensical")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                   (unless (buffer-live-p buf)
+                     (error "Not live buffer : %s" buf))
+                   (nth 0 x)))))
+
+  (should=
+   (with-temp-buffer
      (call-process-shell-command "ls" nil t "-1")
      (buffer-string))
    (wtest 0.1 ;; maybe fail in some environments...
@@ -1013,6 +1140,20 @@
                  (with-current-buffer x (buffer-string)))))
 
   (should=
+   (with-temp-buffer
+     (call-process "ls" nil t "-1")
+     (list 0 (buffer-string)))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (wait 0.1)
+          (deferred:process-shell-ec-bufferc it "ls" "-1")
+          (nextc it
+                 (let ((buf (nth 1 x)))
+                   (unless (buffer-live-p buf)
+                     (error "Not live buffer : %s" buf))
+                   (list (nth 0 x)
+                         (with-current-buffer buf (buffer-string)))))))
+
+  (should=
    (length (buffer-list))
    (deferred:cancel (deferred:process-shell-buffer "ls" nil))
    (length (buffer-list)))
@@ -1021,4 +1162,15 @@
           (wtest 0.1
                  (deferred:process-shell-buffer "lssaf")
                  (nextc it (deferred:not-called-func))
-                 (errorc it "ERROR"))))
+                 (errorc it "ERROR")))
+
+  (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-shell-ec-buffer "ls" nil))
+   (length (buffer-list)))
+
+  (should= "ERROR"
+           (wtest 0.1
+                  (deferred:process-shell-ec-buffer "lssaf")
+                  (nextc it (deferred:not-called-func))
+                  (errorc it "ERROR"))))
