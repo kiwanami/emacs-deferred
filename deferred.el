@@ -854,7 +854,9 @@ process."
           (make-process
            :name proc-name
            :buffer buf-name
-           :command (cons command args)
+           :command (if (null (car args))
+                        (list command)
+                      (cons command args))
            :sentinel (lambda (proc _event)
                        (unless (process-live-p proc)
                          (deferred:post-task nd 'ok
@@ -913,6 +915,16 @@ process."
   "Process chain of `deferred:process-buffer'."
   `(deferred:nextc ,d
      (lambda (,(cl-gensym)) (deferred:process-shell-buffer ,command ,@args))))
+
+(defmacro deferred:process-w-stderrc (d command &rest args)
+  "Process chain of `deferred:process-w-stderr'."
+  `(deferred:nextc ,d
+     (lambda (,(cl-gensym)) (deferred:process-w-stderr ,command ,@args))))
+
+(defmacro deferred:process-w-stderr-bufferc (d command &rest args)
+  "Process chain of `deferred:process-w-stderr-buffer'."
+  `(deferred:nextc ,d
+     (lambda (,(cl-gensym)) (deferred:process-w-stderr-buffer ,command ,@args))))
 
 ;; Special variables defined in url-vars.el.
 (defvar url-request-data)

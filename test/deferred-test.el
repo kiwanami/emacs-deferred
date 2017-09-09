@@ -887,6 +887,18 @@
 
 ;; process
 
+(defmacro should-match (proc-name err-msg a &rest b)
+  `(let ((expected ,a)
+         (actual (progn ,@b)))
+     (should= (nth 0 expected) (nth 0 actual))
+     (should= (nth 1 expected) (nth 1 actual))
+     ;; The stderr buffer gets a notification that it's closing.  The regexp
+     ;; below should match exactly the allowed proc-name only.
+     (should= (string-match
+               (format "%s\nProcess \\*deferred:\\*%s\\*:[0-9]+ stderr finished\n$" ,err-msg ,proc-name)
+               (nth 2 actual))
+              0)))
+
 (ert-deftest deferred-process ()
   "> Process"
   (should=
@@ -1021,4 +1033,105 @@
           (wtest 0.1
                  (deferred:process-shell-buffer "lssaf")
                  (nextc it (deferred:not-called-func))
-                 (errorc it "ERROR"))))
+                 (errorc it "ERROR")))
+
+  ;; w-stderr
+
+  (should-match "pwd" ""
+   (with-temp-buffer
+     (call-process "pwd" nil t nil)
+     (list 0 (buffer-string) ""))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-w-stderr "pwd")))
+
+  (should-match "pwd" ""
+   (with-temp-buffer
+     (call-process "pwd" nil t nil)
+     (list 0 (buffer-string) ""))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-w-stderr "pwd" nil)))
+
+  (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-w-stderr "pwd" nil))
+   (length (buffer-list)))
+
+  (should= 0
+           (dtest
+            (deferred:process-w-stderr "pwd---")
+            (nextc it (deferred:not-called-func))
+            (errorc it (string-match "^Searching for program" (cadr e)))))
+
+  (should-match "pwd" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n"
+                (list 1 "" "")
+                (wtest 0.1 ;; maybe fail in some environments...
+                       (deferred:process-w-stderr "pwd" "--nonsensical-argument")))
+
+  (should-match "pwd" ""
+   (with-temp-buffer
+     (call-process "pwd" nil t nil)
+     (list 0 (buffer-string) ""))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (wait 0.1)
+          (deferred:process-w-stderrc it "pwd" nil)))
+
+  (should-match "ls" ""
+   (with-temp-buffer
+     (call-process "ls" nil t "-1")
+     (list 0 (buffer-string) ""))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (deferred:process-w-stderr-buffer "ls" "-1")
+          (nextc it
+                 (let ((stdout (nth 1 x))
+                       (stderr (nth 2 x)))
+                 (unless (buffer-live-p stdout)
+                   (error "Not live buffer : %s" stdout))
+                 (unless (buffer-live-p stderr)
+                   (error "Not live buffer : %s" stderr))
+                 (list (nth 0 x)
+                       (with-current-buffer stdout (buffer-string))
+                       (with-current-buffer stderr (buffer-string)))))))
+
+  (should-match "pwd" "/usr/bin/pwd: unrecognized option '--nonsensical-argument'\nTry '/usr/bin/pwd --help' for more information.\n"
+                (list 1 "" "")
+                (wtest 0.1 ;; maybe fail in some environments...
+                       (deferred:process-w-stderr-buffer "pwd" "--nonsensical-argument")
+                       (nextc it
+                              (let ((stdout (nth 1 x))
+                                    (stderr (nth 2 x)))
+                                (unless (buffer-live-p stdout)
+                                  (error "Not live buffer : %s" stdout))
+                                (unless (buffer-live-p stderr)
+                                  (error "Not live buffer : %s" stderr))
+                                (list (nth 0 x)
+                                      (with-current-buffer stdout (buffer-string))
+                                      (with-current-buffer stderr (buffer-string)))))))
+
+  (should-match "ls" ""
+   (with-temp-buffer
+     (call-process "ls" nil t "-1")
+     (list 0 (buffer-string) ""))
+   (wtest 0.1 ;; maybe fail in some environments...
+          (wait 0.1)
+          (deferred:process-w-stderr-bufferc it "ls" "-1")
+          (nextc it
+                 (let ((stdout (nth 1 x))
+                       (stderr (nth 2 x)))
+                   (unless (buffer-live-p stdout)
+                     (error "Not live buffer : %s" stdout))
+                   (unless (buffer-live-p stderr)
+                     (error "Not live buffer : %s" stderr))
+                   (list (nth 0 x)
+                         (with-current-buffer stdout (buffer-string))
+                         (with-current-buffer stderr (buffer-string)))))))
+
+  (should=
+   (length (buffer-list))
+   (deferred:cancel (deferred:process-w-stderr-buffer "ls" nil))
+   (length (buffer-list)))
+
+  (should= 0
+           (dtest
+            (deferred:process-w-stderr-buffer "pwd---")
+            (nextc it (deferred:not-called-func))
+            (errorc it (string-match "^Searching for program" (cadr e))))))
