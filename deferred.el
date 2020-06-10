@@ -78,7 +78,7 @@
 
 (defmacro deferred:aand (test &rest rest)
   "[internal] Anaphoric AND."
-  (declare (debug ("test" form &rest form)))
+  (declare (debug (form &rest form)))
   `(let ((it ,test))
      (if it ,(if rest `(deferred:aand ,@rest) 'it))))
 
@@ -93,7 +93,7 @@
 
 (defmacro deferred:lambda (args &rest body)
   "Anaphoric lambda macro for self recursion."
-  (declare (debug ("args" form &rest form)))
+  (declare (debug (form &rest form)))
   (let ((argsyms (cl-loop repeat (length args) collect (cl-gensym))))
   `(lambda (,@argsyms)
      (let (self)
